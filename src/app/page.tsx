@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Cabecalho } from "@/components/Cabecalho";
+import { Shell } from "@/components/Shell";
 
 export const instant = false;
 
@@ -26,13 +26,12 @@ export default async function Home() {
 
   if (!eu) {
     return (
-      <>
-      <Cabecalho diretor={false} />
-      <main className="mx-auto max-w-xl p-6">
+      <Shell>
+      <main className="max-w-xl p-6">
         <h1 className="text-xl font-semibold text-azul">Acesso não liberado</h1>
         <p className="mt-2 text-sm">O e-mail {email} não está cadastrado. Fale com a diretoria do grupo.</p>
       </main>
-      </>
+      </Shell>
     );
   }
 
@@ -43,6 +42,7 @@ export default async function Home() {
     .from("usuario")
     .select("idusuario, nome, linha")
     .eq("idapf", eu.idusuario)
+    .eq("ativo", true)
     .order("nome");
 
   const { data: grupo } = diretor
@@ -50,6 +50,7 @@ export default async function Home() {
         .from("usuario")
         .select("idusuario, nome, linha")
         .eq("membrogrupo", true)
+        .eq("ativo", true)
         .neq("idusuario", eu.idusuario)
         .order("nome")
     : { data: [] as Pessoa[] };
@@ -89,9 +90,8 @@ export default async function Home() {
   );
 
   return (
-    <>
-    <Cabecalho diretor={diretor} />
-    <main className="mx-auto max-w-2xl p-6">
+    <Shell>
+    <main className="max-w-2xl p-6">
       <h1 className="text-xl font-semibold text-azul">Olá, {eu.nome}</h1>
       <p className="text-sm text-gray-600">
         {cargo?.descricao} · {avaliacao ? `Avaliação ${avaliacao.ano}` : "Nenhuma avaliação aberta"}
@@ -99,7 +99,7 @@ export default async function Home() {
       {!!assessorados?.length && <Lista titulo="Meus assessorados" pessoas={assessorados} />}
       {diretor && <Lista titulo="Adultos do grupo" pessoas={grupo} />}
     </main>
-    </>
+    </Shell>
   );
 }
 
