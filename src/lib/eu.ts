@@ -1,17 +1,26 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function carregarEu(supabase: SupabaseClient) {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
-  const email = (auth.user.email ?? "").toLowerCase();
+type CargoInfo = { descricao: string; avalia: boolean } | null;
+
+export async function carregarSessao(supabase: SupabaseClient) {
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims) return null;
+  const email = String(claims.email ?? "").toLowerCase();
   const { data: eu } = await supabase
     .from("usuario")
-    .select("idusuario, nome, idcargo")
-    .or(`auth_user_id.eq.${auth.user.id},email.eq.${email}`)
+    .select("idusuario, nome, cargo:cargo(descricao, avalia)")
+    .eq("auth_user_id", claims.sub)
     .maybeSingle();
-  if (!eu) return null;
-  const { data: cargo } = eu.idcargo
-    ? await supabase.from("cargo").select("descricao, avalia").eq("idcargo", eu.idcargo).maybeSingle()
-    : { data: null };
-  return { ...eu, cargo, diretor: !!cargo?.avalia };
+  if (!eu) return { email, eu: null };
+  const cargo = (Array.isArray(eu.cargo) ? eu.cargo[0] : eu.cargo) as CargoInfo;
+  return {
+    email,
+    eu: { idusuario: eu.idusuario as number, nome: eu.nome as string, cargo, diretor: !!cargo?.avalia },
+  };
+}
+
+export async function carregarEu(supabase: SupabaseClient) {
+  const sessao = await carregarSessao(supabase);
+  return sessao?.eu ?? null;
 }

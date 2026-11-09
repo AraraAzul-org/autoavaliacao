@@ -34,6 +34,7 @@ export function FormUsuario(props: {
   valores?: ValoresUsuario;
   emailTravado?: boolean;
   botao: string;
+  pedirSenha?: boolean;
 }) {
   const v = props.valores ?? {};
   return (
@@ -60,6 +61,12 @@ export function FormUsuario(props: {
         <input name="datasituacao" type="date" defaultValue={v.datasituacao ?? ""} className={campo} />
       </label>
       <Seletor nome="idapf" rotulo="APF (assessor pessoal de formação)" opcoes={props.apfs} valor={v.idapf} />
+      {props.pedirSenha && (
+        <label className="text-sm sm:col-span-2">Senha inicial * (mínimo 8 caracteres)
+          <input name="senha" type="text" required minLength={8} autoComplete="off" className={campo} />
+          <span className="text-xs text-gray-500">Anote e repasse ao adulto. Ele será obrigado a trocá-la no primeiro acesso.</span>
+        </label>
+      )}
       <label className="flex items-center gap-2 text-sm sm:col-span-2">
         <input name="membrogrupo" type="checkbox" defaultChecked={v.membrogrupo ?? true} />
         Faz parte do grupo (desmarque para APF de outro grupo)

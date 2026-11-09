@@ -45,6 +45,7 @@ export default async function Usuarios({
         <FormUsuario
           action={criarUsuario}
           botao="Cadastrar"
+          pedirSenha
           ramos={ramos.map((x) => ({ id: x.idramo, rotulo: x.nome }))}
           cargos={cargos.map((x) => ({ id: x.idcargo, rotulo: x.descricao }))}
           situacoes={situacoes.map((x) => ({ id: x.idsituacao, rotulo: x.situacao }))}
