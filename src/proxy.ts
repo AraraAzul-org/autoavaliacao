@@ -21,7 +21,8 @@ export async function proxy(request: NextRequest) {
   );
   const { data } = await supabase.auth.getClaims();
   const { pathname } = request.nextUrl;
-  if (!data?.claims && !pathname.startsWith("/login") && !pathname.startsWith("/auth")) {
+  const publica = ["/login", "/auth", "/privacidade", "/termos"].some((r) => pathname.startsWith(r));
+  if (!data?.claims && !publica) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
