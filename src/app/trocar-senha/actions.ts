@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient, temChaveDeServico } from "@/lib/supabase/admin";
+import { gerirAcesso } from "@/lib/acesso";
 
 export async function trocarSenha(formData: FormData) {
   const nova = String(formData.get("nova") ?? "");
@@ -19,9 +19,8 @@ export async function trocarSenha(formData: FormData) {
   const { error } = await supabase.auth.updateUser({ password: nova });
   if (error) volta("Não foi possível alterar a senha. Tente uma senha diferente.");
 
-  if (temChaveDeServico()) {
-    await createAdminClient().auth.admin.updateUserById(auth.user.id, { app_metadata: { trocar_senha: false } });
-    await supabase.auth.refreshSession();
-  }
+  const limpou = await gerirAcesso(supabase, { acao: "limpar_troca" });
+  if (!limpou.ok) volta("Senha alterada, mas não foi possível concluir. Tente salvar a senha novamente.");
+  await supabase.auth.refreshSession();
   redirect("/");
 }

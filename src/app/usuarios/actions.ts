@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient, temChaveDeServico } from "@/lib/supabase/admin";
+import { gerirAcesso } from "@/lib/acesso";
 import { carregarEu } from "@/lib/eu";
 
 function ler(f: FormData) {
@@ -31,7 +31,6 @@ async function exigirDiretor() {
 
 const msgErro = (code?: string) =>
   code === "23505" ? "Este e-mail já está cadastrado." : "Não foi possível salvar. Confira os dados.";
-const SEM_CHAVE = "Configuração pendente: a chave de serviço do Supabase ainda não foi cadastrada na Vercel.";
 const SENHA_CURTA = "A senha deve ter pelo menos 8 caracteres.";
 
 export async function criarUsuario(formData: FormData) {
@@ -41,7 +40,6 @@ export async function criarUsuario(formData: FormData) {
   const volta = (m: string): never => redirect(`/usuarios?erro=${encodeURIComponent(m)}`);
 
   if (senha.length < 8) volta(SENHA_CURTA);
-  if (!temChaveDeServico()) volta(SEM_CHAVE);
   if (d.idapf) {
     const { data: apf } = await supabase.from("usuario").select("email").eq("idusuario", d.idapf).maybeSingle();
     if (apf?.email?.toLowerCase() === d.email) volta("O APF não pode ser o próprio usuário.");
@@ -50,18 +48,11 @@ export async function criarUsuario(formData: FormData) {
   const { data: novo, error } = await supabase.from("usuario").insert(d).select("idusuario").single();
   if (error || !novo) return volta(msgErro(error?.code));
 
-  const admin = createAdminClient();
-  const { data: criado, error: erroAcesso } = await admin.auth.admin.createUser({
-    email: d.email,
-    password: senha,
-    email_confirm: true,
-    app_metadata: { trocar_senha: true },
-  });
-  if (erroAcesso || !criado.user) {
+  const acesso = await gerirAcesso(supabase, { acao: "definir_senha", idusuario: novo.idusuario, senha });
+  if (!acesso.ok) {
     await supabase.from("usuario").delete().eq("idusuario", novo.idusuario);
-    return volta("Não foi possível criar o acesso. O e-mail pode já ter um acesso no sistema.");
+    return volta(acesso.erro ?? "Não foi possível criar o acesso.");
   }
-  await admin.from("usuario").update({ auth_user_id: criado.user.id }).eq("idusuario", novo.idusuario);
 
   revalidatePath("/usuarios");
   redirect("/usuarios?ok=1");
@@ -102,28 +93,8 @@ export async function redefinirSenha(id: number, formData: FormData) {
   const volta = (m: string): never => redirect(`/usuarios/${id}?erro=${encodeURIComponent(m)}`);
 
   if (senha.length < 8) volta(SENHA_CURTA);
-  if (!temChaveDeServico()) volta(SEM_CHAVE);
 
-  const { data: u } = await supabase.from("usuario").select("email, auth_user_id").eq("idusuario", id).maybeSingle();
-  if (!u) return volta("Usuário não encontrado.");
-
-  const admin = createAdminClient();
-  if (u.auth_user_id) {
-    const { error } = await admin.auth.admin.updateUserById(u.auth_user_id, {
-      password: senha,
-      app_metadata: { trocar_senha: true },
-    });
-    if (error) volta("Não foi possível definir a senha. Tente outra.");
-  } else {
-    const { data: criado, error } = await admin.auth.admin.createUser({
-      email: u.email,
-      password: senha,
-      email_confirm: true,
-      app_metadata: { trocar_senha: true },
-    });
-    const novoId = criado?.user?.id;
-    if (error || !novoId) return volta("Não foi possível criar o acesso. O e-mail pode já ter um acesso no sistema.");
-    await admin.from("usuario").update({ auth_user_id: novoId }).eq("idusuario", id);
-  }
+  const acesso = await gerirAcesso(supabase, { acao: "definir_senha", idusuario: id, senha });
+  if (!acesso.ok) return volta(acesso.erro ?? "Não foi possível definir a senha.");
   redirect(`/usuarios/${id}?ok=${encodeURIComponent("Senha definida. A pessoa deverá trocá-la no primeiro acesso.")}`);
 }
