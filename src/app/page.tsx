@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { carregarSessao } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
 
 export const instant = false;
@@ -14,60 +15,41 @@ const ROTULO: Record<string, string> = {
 
 export default async function Home() {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/login");
-  const email = (auth.user.email ?? "").toLowerCase();
-
-  const { data: eu } = await supabase
-    .from("usuario")
-    .select("idusuario, nome, cargo:cargo(descricao, avalia)")
-    .or(`auth_user_id.eq.${auth.user.id},email.eq.${email}`)
-    .maybeSingle();
+  const sessao = await carregarSessao(supabase);
+  if (!sessao) redirect("/login");
+  const { eu, email } = sessao;
 
   if (!eu) {
     return (
       <Shell>
-      <main className="max-w-xl p-6">
-        <h1 className="text-xl font-semibold text-azul">Acesso não liberado</h1>
-        <p className="mt-2 text-sm">O e-mail {email} não está cadastrado. Fale com a diretoria do grupo.</p>
-      </main>
+        <main className="max-w-xl p-6">
+          <h1 className="text-xl font-semibold text-azul">Acesso não liberado</h1>
+          <p className="mt-2 text-sm">O e-mail {email} não está cadastrado. Fale com a diretoria do grupo.</p>
+        </main>
       </Shell>
     );
   }
 
-  const cargo = Array.isArray(eu.cargo) ? eu.cargo[0] : eu.cargo;
-  const diretor = !!cargo?.avalia;
-
-  const { data: assessorados } = await supabase
-    .from("usuario")
-    .select("idusuario, nome, linha")
-    .eq("idapf", eu.idusuario)
-    .eq("ativo", true)
-    .order("nome");
-
-  const { data: grupo } = diretor
-    ? await supabase
-        .from("usuario")
-        .select("idusuario, nome, linha")
-        .eq("membrogrupo", true)
-        .eq("ativo", true)
-        .neq("idusuario", eu.idusuario)
-        .order("nome")
-    : { data: [] as Pessoa[] };
-
-  const { data: avaliacao } = await supabase
-    .from("avaliacao")
-    .select("idavaliacao, ano")
-    .order("ano", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [assessorados, grupo, avaliacao] = await Promise.all([
+    supabase.from("usuario").select("idusuario, nome, linha").eq("idapf", eu.idusuario).eq("ativo", true).order("nome"),
+    eu.diretor
+      ? supabase
+          .from("usuario")
+          .select("idusuario, nome, linha")
+          .eq("membrogrupo", true)
+          .eq("ativo", true)
+          .neq("idusuario", eu.idusuario)
+          .order("nome")
+      : Promise.resolve({ data: [] as Pessoa[] }),
+    supabase.from("avaliacao").select("idavaliacao, ano").order("ano", { ascending: false }).limit(1).maybeSingle(),
+  ]);
 
   const status = new Map<number, string>();
-  if (avaliacao) {
+  if (avaliacao.data) {
     const { data: lista } = await supabase
       .from("avaliacaousuario")
       .select("idusuario, status")
-      .eq("idavaliacao", avaliacao.idavaliacao);
+      .eq("idavaliacao", avaliacao.data.idavaliacao);
     lista?.forEach((l) => status.set(l.idusuario, l.status));
   }
 
@@ -81,7 +63,7 @@ export default async function Home() {
           {pessoas.map((p) => (
             <li key={p.idusuario} className="flex justify-between p-3 text-sm">
               <span>{p.nome} <span className="text-gray-500">({p.linha})</span></span>
-              <span>{avaliacao ? ROTULO[status.get(p.idusuario) ?? "pendente"] : "—"}</span>
+              <span>{avaliacao.data ? ROTULO[status.get(p.idusuario) ?? "pendente"] : "—"}</span>
             </li>
           ))}
         </ul>
@@ -91,15 +73,14 @@ export default async function Home() {
 
   return (
     <Shell>
-    <main className="max-w-2xl p-6">
-      <h1 className="text-xl font-semibold text-azul">Olá, {eu.nome}</h1>
-      <p className="text-sm text-gray-600">
-        {cargo?.descricao} · {avaliacao ? `Avaliação ${avaliacao.ano}` : "Nenhuma avaliação aberta"}
-      </p>
-      {!!assessorados?.length && <Lista titulo="Meus assessorados" pessoas={assessorados} />}
-      {diretor && <Lista titulo="Adultos do grupo" pessoas={grupo} />}
-    </main>
+      <main className="max-w-2xl p-6">
+        <h1 className="text-xl font-semibold text-azul">Olá, {eu.nome}</h1>
+        <p className="text-sm text-gray-600">
+          {eu.cargo?.descricao} · {avaliacao.data ? `Avaliação ${avaliacao.data.ano}` : "Nenhuma avaliação aberta"}
+        </p>
+        {!!assessorados.data?.length && <Lista titulo="Meus assessorados" pessoas={assessorados.data} />}
+        {eu.diretor && <Lista titulo="Adultos do grupo" pessoas={grupo.data} />}
+      </main>
     </Shell>
   );
 }
-

@@ -6,9 +6,9 @@ import { usePathname } from "next/navigation";
 const ITENS = [
   { href: "/", rotulo: "Início", pronto: true },
   { href: "/usuarios", rotulo: "Usuários", pronto: true },
-  { href: "/ramos", rotulo: "Ramos", pronto: false },
-  { href: "/cargos", rotulo: "Cargos", pronto: false },
-  { href: "/situacoes", rotulo: "Situações", pronto: false },
+  { href: "/ramos", rotulo: "Ramos", pronto: true },
+  { href: "/cargos", rotulo: "Cargos", pronto: true },
+  { href: "/situacoes", rotulo: "Situações", pronto: true },
   { href: "/avaliacoes", rotulo: "Avaliações", pronto: false },
   { href: "/perguntas", rotulo: "Etapas e perguntas", pronto: true },
   { href: "/autoavaliacao", rotulo: "Minha autoavaliação", pronto: false },
