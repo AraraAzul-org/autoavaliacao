@@ -36,7 +36,7 @@ export default async function Perguntas({
   const { ok, erro, abrir } = await searchParams;
   const [e, p, n] = await Promise.all([
     supabase.from("etapa").select("idetapa, descricao").order("idetapa"),
-    supabase.from("pergunta").select("idpergunta, codigo, descricao, idetapa").order("codigo"),
+    supabase.from("pergunta").select("idpergunta, codigo, descricao, idetapa, descritiva").order("codigo"),
     supabase.from("pontuacao").select("idpontuacao, idpergunta, descricao, nota").order("nota"),
   ]);
   const etapas = e.data ?? [];
@@ -81,7 +81,11 @@ export default async function Perguntas({
                 <details key={pe.idpergunta} open={abrir === String(pe.idpergunta)} className="border-b p-3">
                   <summary className="cursor-pointer text-sm">
                     <span className="font-medium text-azul">{pe.codigo}</span> — {pe.descricao}
-                    <span className="text-gray-500"> ({opcoes.length} pontuações)</span>
+                    {pe.descritiva ? (
+                      <span className="ml-2 rounded bg-amarelo px-1.5 py-0.5 text-xs text-gray-900">Descritiva</span>
+                    ) : (
+                      <span className="text-gray-500"> ({opcoes.length} pontuações)</span>
+                    )}
                   </summary>
 
                   <form action={salvarPergunta} className="mt-3 grid gap-2 sm:grid-cols-[6rem_1fr_auto]">
@@ -90,8 +94,18 @@ export default async function Perguntas({
                     <input name="codigo" required defaultValue={pe.codigo} className={campo} />
                     <input name="descricao" required defaultValue={pe.descricao} className={campo} />
                     <button className={btn}>Salvar pergunta</button>
+                    <label className="flex items-center gap-2 text-sm sm:col-span-3">
+                      <input name="descritiva" type="checkbox" defaultChecked={pe.descritiva} />
+                      Resposta descritiva (texto livre, sem pontuação)
+                    </label>
                   </form>
 
+                  {pe.descritiva ? (
+                    <p className="mt-3 rounded bg-gray-50 p-2 text-sm text-gray-600">
+                      Resposta em texto livre: não há pontuações para esta pergunta.
+                    </p>
+                  ) : (
+                    <>
                   <ul className="mt-3 space-y-2">
                     {opcoes.map((o) => (
                       <li key={o.idpontuacao} className="flex flex-wrap items-start gap-2">
@@ -114,6 +128,9 @@ export default async function Perguntas({
                     <button className={btn}>Adicionar pontuação</button>
                   </form>
 
+                    </>
+                  )}
+
                   <div className="mt-3"><Excluir tabela="pergunta" id={pe.idpergunta} /></div>
                 </details>
               );
@@ -124,6 +141,10 @@ export default async function Perguntas({
               <input name="codigo" required placeholder="Código" className={campo} />
               <input name="descricao" required placeholder="Nova pergunta nesta etapa" className={campo} />
               <button className={btn}>Adicionar pergunta</button>
+              <label className="flex items-center gap-2 text-sm sm:col-span-3">
+                <input name="descritiva" type="checkbox" />
+                Resposta descritiva (texto livre, sem pontuação)
+              </label>
             </form>
           </section>
         ))}

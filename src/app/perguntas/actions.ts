@@ -39,8 +39,28 @@ export async function salvarEtapa(f: FormData) {
 export async function salvarPergunta(f: FormData) {
   const supabase = await exigirDiretor();
   const id = idDe(f, "idpergunta");
-  const dados = { codigo: texto(f, "codigo"), descricao: texto(f, "descricao"), idetapa: idDe(f, "idetapa") };
+  const dados = {
+    codigo: texto(f, "codigo"),
+    descricao: texto(f, "descricao"),
+    idetapa: idDe(f, "idetapa"),
+    descritiva: f.get("descritiva") === "on",
+  };
   if (!dados.codigo || !dados.descricao || !dados.idetapa) voltar("erro", "Informe código, descrição e etapa.");
+
+  if (id) {
+    const { data: atual } = await supabase.from("pergunta").select("descritiva").eq("idpergunta", id).maybeSingle();
+    if (atual && atual.descritiva !== dados.descritiva) {
+      const { count: respostas } = await supabase
+        .from("resposta").select("idresposta", { count: "exact", head: true }).eq("idpergunta", id);
+      if (respostas) voltar("erro", "Esta pergunta já tem respostas; não é possível mudar o tipo.", String(id));
+      if (dados.descritiva) {
+        const { count: opcoes } = await supabase
+          .from("pontuacao").select("idpontuacao", { count: "exact", head: true }).eq("idpergunta", id);
+        if (opcoes) voltar("erro", "Exclua as pontuações antes de tornar a pergunta descritiva.", String(id));
+      }
+    }
+  }
+
   const { data, error } = id
     ? await supabase.from("pergunta").update(dados).eq("idpergunta", id).select("idpergunta")
     : await supabase.from("pergunta").insert(dados).select("idpergunta");
@@ -56,6 +76,8 @@ export async function salvarPontuacao(f: FormData) {
   const descricao = texto(f, "descricao");
   if (!idpergunta || !descricao || texto(f, "nota") === "" || Number.isNaN(nota))
     voltar("erro", "Informe a descrição e uma nota numérica.", String(idpergunta));
+  const { data: pergunta } = await supabase.from("pergunta").select("descritiva").eq("idpergunta", idpergunta).maybeSingle();
+  if (pergunta?.descritiva) voltar("erro", "Pergunta descritiva não tem pontuações.", String(idpergunta));
   const { error } = id
     ? await supabase.from("pontuacao").update({ descricao, nota }).eq("idpontuacao", id)
     : await supabase.from("pontuacao").insert({ idpergunta, descricao, nota });
