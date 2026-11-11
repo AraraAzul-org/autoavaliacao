@@ -30,7 +30,7 @@ export default function Login() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 p-6">
       <Image src="/logo.png" alt="Grupo Escoteiro Arara Azul" width={140} height={163} priority className="mx-auto" />
-      <h1 className="text-center text-2xl font-semibold text-azul">Autoavaliação de Adultos</h1>
+      <h1 className="text-center text-2xl font-semibold text-azul">Avaliação de Adultos</h1>
       <form onSubmit={entrar} className="flex flex-col gap-3">
         <input
           type="email"

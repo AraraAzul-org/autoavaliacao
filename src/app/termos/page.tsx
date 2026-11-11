@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { PaginaPublica } from "@/components/PaginaPublica";
 
-export const metadata: Metadata = { title: "Termos de Uso · Autoavaliação de Adultos" };
+export const metadata: Metadata = { title: "Termos de Uso · Avaliação de Adultos" };
 
 export default function Termos() {
   return (
     <PaginaPublica titulo="Termos de Uso">
       <p>
-        O aplicativo de Autoavaliação de Adultos é de uso restrito aos adultos cadastrados pela diretoria do Grupo
+        O aplicativo de Avaliação de Adultos é de uso restrito aos adultos cadastrados pela diretoria do Grupo
         Escoteiro Arara Azul (15º GO). Ao usá-lo, você concorda com os termos abaixo.
       </p>
 

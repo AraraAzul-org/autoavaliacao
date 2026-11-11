@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PaginaPublica } from "@/components/PaginaPublica";
 
-export const metadata: Metadata = { title: "Política de Privacidade · Autoavaliação de Adultos" };
+export const metadata: Metadata = { title: "Política de Privacidade · Avaliação de Adultos" };
 
 const CONTATO = process.env.NEXT_PUBLIC_CONTATO_EMAIL;
 
@@ -9,7 +9,7 @@ export default function Privacidade() {
   return (
     <PaginaPublica titulo="Política de Privacidade">
       <p>
-        Este aplicativo é usado pelo Grupo Escoteiro Arara Azul (15º GO) para a autoavaliação e o acompanhamento da
+        Este aplicativo é usado pelo Grupo Escoteiro Arara Azul (15º GO) para a avaliação e o acompanhamento da
         formação dos adultos do grupo. Esta política explica quais dados são tratados e para quê, conforme a Lei
         Geral de Proteção de Dados (Lei nº 13.709/2018).
       </p>
@@ -28,7 +28,7 @@ export default function Privacidade() {
       <h2>Para que usamos</h2>
       <ul>
         <li>Identificar quem está acessando e liberar o acesso somente a adultos cadastrados.</li>
-        <li>Registrar a autoavaliação e acompanhar a formação de cada adulto.</li>
+        <li>Registrar a avaliação e acompanhar a formação de cada adulto.</li>
         <li>Manter o histórico das avaliações realizadas ao longo dos anos.</li>
       </ul>
 

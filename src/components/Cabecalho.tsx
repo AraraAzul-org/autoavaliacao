@@ -6,7 +6,7 @@ export function Cabecalho() {
     <header className="border-b-4 border-amarelo bg-azul text-white">
       <div className="flex items-center gap-3 p-3.5">
         <Image src="/logo.png" alt="Grupo Escoteiro Arara Azul" width={53} height={62} priority />
-        <span className="flex-1 font-semibold">Autoavaliação de Adultos</span>
+        <span className="flex-1 font-semibold">Avaliação de Adultos</span>
         <Link href="/trocar-senha" className="text-sm underline">Minha senha</Link>
         <form action="/auth/signout" method="post">
           <button className="text-sm underline">Sair</button>

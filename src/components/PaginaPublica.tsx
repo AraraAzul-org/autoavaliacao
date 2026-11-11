@@ -7,7 +7,7 @@ export function PaginaPublica({ titulo, children }: { titulo: string; children: 
       <header className="border-b-4 border-amarelo bg-azul text-white">
         <div className="mx-auto flex max-w-3xl items-center gap-3 p-3">
           <Image src="/logo.png" alt="Grupo Escoteiro Arara Azul" width={46} height={53} />
-          <span className="flex-1 font-semibold">Autoavaliação de Adultos · Arara Azul</span>
+          <span className="flex-1 font-semibold">Avaliação de Adultos · Arara Azul</span>
           <Link href="/login" className="text-sm underline">Entrar</Link>
         </div>
       </header>

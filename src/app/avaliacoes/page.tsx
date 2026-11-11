@@ -51,7 +51,7 @@ export default async function Avaliacoes({
         <input
           name="descricao"
           required
-          placeholder="Ex.: Autoavaliação 2026"
+          placeholder="Ex.: Avaliação de desempenho 2026"
           defaultValue={valores?.descricao ?? ""}
           className={campo}
         />
