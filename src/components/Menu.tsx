@@ -10,7 +10,7 @@ const ITENS = [
   { href: "/cargos", rotulo: "Cargos", pronto: true },
   { href: "/situacoes", rotulo: "Situações", pronto: true },
   { href: "/avaliacoes", rotulo: "Avaliações", pronto: false },
-  { href: "/perguntas", rotulo: "Etapas e perguntas", pronto: true },
+  { href: "/perguntas", rotulo: "Questionário", pronto: true },
   { href: "/autoavaliacao", rotulo: "Minha autoavaliação", pronto: false },
   { href: "/assessorados", rotulo: "Meus assessorados", pronto: false },
 ];
