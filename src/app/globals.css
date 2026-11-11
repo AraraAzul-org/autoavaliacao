@@ -10,3 +10,20 @@
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+
+/* Ações das linhas de cadastro: só aparecem ao passar o mouse ou focar a linha.
+   Em telas sem hover (toque), ficam sempre visíveis. */
+.acoes-linha {
+  transition: opacity 150ms ease;
+}
+
+@media (hover: hover) {
+  .linha-cadastro .acoes-linha {
+    opacity: 0;
+  }
+
+  .linha-cadastro:hover .acoes-linha,
+  .linha-cadastro:focus-within .acoes-linha {
+    opacity: 1;
+  }
+}
