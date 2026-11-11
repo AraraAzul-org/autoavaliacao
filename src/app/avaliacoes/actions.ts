@@ -56,3 +56,18 @@ export async function excluirAvaliacao(f: FormData) {
   if (error) voltar("erro", mensagem(error));
   voltar("ok", "Avaliação excluída.");
 }
+
+// Abre a avaliação e cria a avaliação de cada adulto ativo do grupo.
+// Quem já tem avaliação nesta pesquisa não é duplicado.
+export async function gerarAvaliacao(f: FormData) {
+  const supabase = await exigirDiretor();
+  const id = idDe(f, "idavaliacao");
+  if (!id) voltar("erro", "Pedido inválido.");
+
+  const { data, error } = await supabase.rpc("gerar_avaliacao", { p_id: id });
+  if (error) voltar("erro", mensagem(error));
+
+  const novos = Number(data ?? 0);
+  if (novos === 0) voltar("ok", "Nenhuma nova avaliação: todos os adultos ativos já estavam incluídos.");
+  voltar("ok", novos === 1 ? "Avaliação aberta. 1 adulto recebeu a avaliação." : `Avaliação aberta. ${novos} adultos receberam a avaliação.`);
+}

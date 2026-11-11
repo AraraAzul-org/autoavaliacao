@@ -11,7 +11,7 @@ const ITENS = [
   { href: "/situacoes", rotulo: "Situações", pronto: true, restrito: true },
   { href: "/avaliacoes", rotulo: "Avaliações", pronto: true, restrito: true },
   { href: "/perguntas", rotulo: "Questionário", pronto: true, restrito: true },
-  { href: "/autoavaliacao", rotulo: "Minha autoavaliação", pronto: false, restrito: false },
+  { href: "/autoavaliacao", rotulo: "Minhas avaliações", pronto: false, restrito: false },
   { href: "/assessorados", rotulo: "Meus assessorados", pronto: false, restrito: false },
 ];
 

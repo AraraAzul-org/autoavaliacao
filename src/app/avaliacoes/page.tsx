@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
-import { excluirAvaliacao, salvarAvaliacao } from "./actions";
+import { excluirAvaliacao, gerarAvaliacao, salvarAvaliacao } from "./actions";
 
 export const instant = false;
 
@@ -82,8 +82,8 @@ export default async function Avaliacoes({
       <main className="max-w-4xl p-4">
         <h1 className="text-xl font-semibold text-azul">Avaliações</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Cada avaliação usa um questionário e tem um prazo. Ela nasce como <strong>rascunho</strong>; as
-          avaliações dos adultos só são criadas no passo de geração.
+          Cada avaliação usa um questionário e tem um prazo. Ela nasce como <strong>rascunho</strong> e passa a{" "}
+          <strong>aberta</strong> quando você gera as avaliações dos adultos.
         </p>
         {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
         {ok && <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">{ok}</p>}
@@ -152,13 +152,29 @@ export default async function Avaliacoes({
                 <span>
                   {total} {total === 1 ? "avaliação gerada" : "avaliações geradas"}
                 </span>
-                <button
-                  disabled
-                  title="Em breve"
-                  className="ml-auto cursor-not-allowed rounded border border-gray-300 px-2 py-1 text-xs text-gray-400"
-                >
-                  Gerar avaliações
-                </button>
+                {av.datageracao && (
+                  <span>
+                    Aberta em <strong>{dataBR(av.datageracao.slice(0, 10))}</strong>
+                  </span>
+                )}
+                {av.status !== "finalizada" && (
+                  <details className="ml-auto text-sm">
+                    <summary className="cursor-pointer rounded border border-azul px-2 py-1 text-xs font-medium text-azul hover:bg-azul/10">
+                      {rascunho ? "Gerar avaliações" : "Incluir novos adultos"}
+                    </summary>
+                    <form action={gerarAvaliacao} className="mt-2 flex flex-col items-end gap-1">
+                      <input type="hidden" name="idavaliacao" value={av.idavaliacao} />
+                      <p className="max-w-72 text-right text-xs text-gray-600">
+                        {rascunho
+                          ? "A avaliação fica aberta e cada adulto ativo do grupo recebe a sua. As perguntas vêm do questionário escolhido."
+                          : "Inclui somente quem ainda não tem avaliação nesta pesquisa."}
+                      </p>
+                      <button className="rounded bg-azul px-2 py-1 text-xs text-white hover:bg-azul-escuro">
+                        Confirmar geração
+                      </button>
+                    </form>
+                  </details>
+                )}
               </div>
             </section>
           );
