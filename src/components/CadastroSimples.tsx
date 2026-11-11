@@ -31,7 +31,13 @@ export async function CadastroSimples({
   const linhas = (data ?? []) as Record<string, string | number | boolean>[];
   const campoNome = cfg.campos.find((c) => c.tipo === "texto")?.nome ?? cfg.chave;
 
-  const Campos = ({ valores }: { valores?: Record<string, string | number | boolean> }) => (
+  const Campos = ({
+    valores,
+    comRotulo = false,
+  }: {
+    valores?: Record<string, string | number | boolean>;
+    comRotulo?: boolean;
+  }) => (
     <>
       {cfg.campos.map((c) =>
         c.tipo === "bool" ? (
@@ -42,11 +48,11 @@ export async function CadastroSimples({
               defaultChecked={!!valores?.[c.nome]}
               className="size-4 rounded border-gray-300 accent-azul"
             />
-            {c.rotulo}
+            <span className={comRotulo ? undefined : "sr-only"}>{c.rotulo}</span>
           </label>
         ) : (
           <label key={c.nome} className="flex min-w-48 flex-1 flex-col gap-1">
-            <span className={rotulo}>{c.rotulo}</span>
+            <span className={comRotulo ? rotulo : "sr-only"}>{c.rotulo}</span>
             <input
               name={c.nome}
               required
@@ -81,7 +87,7 @@ export async function CadastroSimples({
           className="mt-5 flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white p-4 shadow-sm"
         >
           <input type="hidden" name="tabela" value={tabela} />
-          <Campos />
+          <Campos comRotulo />
           <button className={btn}>Adicionar</button>
         </form>
 

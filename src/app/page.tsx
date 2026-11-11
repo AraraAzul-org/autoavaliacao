@@ -54,16 +54,22 @@ export default async function Home() {
   }
 
   const Lista = ({ titulo, pessoas }: { titulo: string; pessoas: Pessoa[] | null }) => (
-    <section className="mt-6">
-      <h2 className="font-semibold">{titulo}</h2>
+    <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm">
+      <h2 className="border-b border-gray-100 bg-gray-50/60 px-4 py-2.5 text-sm font-semibold text-gray-800">
+        {titulo}
+      </h2>
       {!pessoas?.length ? (
-        <p className="mt-2 text-sm text-gray-600">Nenhum adulto para exibir.</p>
+        <p className="px-4 py-4 text-sm text-gray-600">Nenhum adulto para exibir.</p>
       ) : (
-        <ul className="mt-2 divide-y rounded border">
+        <ul className="divide-y divide-gray-100">
           {pessoas.map((p) => (
-            <li key={p.idusuario} className="flex justify-between p-3 text-sm">
-              <span>{p.nome} <span className="text-gray-500">({p.linha})</span></span>
-              <span>{avaliacao.data ? ROTULO[status.get(p.idusuario) ?? "pendente"] : "—"}</span>
+            <li key={p.idusuario} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 text-sm">
+              <span className="min-w-0">
+                {p.nome} <span className="text-gray-500">({p.linha})</span>
+              </span>
+              <span className="text-gray-600">
+                {avaliacao.data ? ROTULO[status.get(p.idusuario) ?? "pendente"] : "—"}
+              </span>
             </li>
           ))}
         </ul>
