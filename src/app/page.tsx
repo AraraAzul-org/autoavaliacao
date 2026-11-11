@@ -41,7 +41,13 @@ export default async function Home() {
           .neq("idusuario", eu.idusuario)
           .order("nome")
       : Promise.resolve({ data: [] as Pessoa[] }),
-    supabase.from("avaliacao").select("idavaliacao, ano").order("ano", { ascending: false }).limit(1).maybeSingle(),
+    supabase
+      .from("avaliacao")
+      .select("idavaliacao, descricao")
+      .eq("status", "aberta")
+      .order("prazo", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const status = new Map<number, string>();
@@ -82,7 +88,7 @@ export default async function Home() {
       <main className="max-w-2xl p-6">
         <h1 className="text-xl font-semibold text-azul">Olá, {eu.nome}</h1>
         <p className="text-sm text-gray-600">
-          {eu.cargo?.descricao} · {avaliacao.data ? `Avaliação ${avaliacao.data.ano}` : "Nenhuma avaliação aberta"}
+          {eu.cargo?.descricao} · {avaliacao.data ? `Avaliação ${avaliacao.data.descricao}` : "Nenhuma avaliação aberta"}
         </p>
         {!!assessorados.data?.length && <Lista titulo="Meus assessorados" pessoas={assessorados.data} />}
         {eu.diretor && <Lista titulo="Adultos do grupo" pessoas={grupo.data} />}

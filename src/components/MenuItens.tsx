@@ -9,7 +9,7 @@ const ITENS = [
   { href: "/ramos", rotulo: "Ramos", pronto: true, restrito: true },
   { href: "/cargos", rotulo: "Cargos", pronto: true, restrito: true },
   { href: "/situacoes", rotulo: "Situações", pronto: true, restrito: true },
-  { href: "/avaliacoes", rotulo: "Avaliações", pronto: false, restrito: true },
+  { href: "/avaliacoes", rotulo: "Avaliações", pronto: true, restrito: true },
   { href: "/perguntas", rotulo: "Questionário", pronto: true, restrito: true },
   { href: "/autoavaliacao", rotulo: "Minha autoavaliação", pronto: false, restrito: false },
   { href: "/assessorados", rotulo: "Meus assessorados", pronto: false, restrito: false },
