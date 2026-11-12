@@ -22,8 +22,13 @@ function voltar(tipo: "ok" | "erro", msg: string, abrir?: string | null, q?: str
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const idDe = (f: FormData, k: string) => (f.get(k) ? Number(f.get(k)) : null);
-const falha = (code?: string) =>
-  code === "23503" ? "Não é possível excluir: há itens ou respostas vinculados." : "Não foi possível salvar. Confira os dados.";
+// Os triggers do banco escrevem mensagens em português já prontas para o usuário.
+function falha(erro?: { code?: string; message?: string }) {
+  const m = erro?.message ?? "";
+  if (erro?.code === "P0001" && m) return m;
+  if (erro?.code === "23503") return "Não é possível excluir: há itens ou respostas vinculados.";
+  return "Não foi possível salvar. Confira os dados.";
+}
 
 export async function salvarQuestionario(f: FormData) {
   const supabase = await exigirDiretor();
@@ -35,7 +40,7 @@ export async function salvarQuestionario(f: FormData) {
 
   if (id) {
     const { error } = await supabase.from("questionario").update({ descricao, ativo }).eq("idquestionario", id);
-    if (error) voltar("erro", falha(error.code), null, String(id));
+    if (error) voltar("erro", falha(error), null, String(id));
     voltar("ok", "Questionário salvo.", null, String(id));
   }
 
@@ -43,7 +48,7 @@ export async function salvarQuestionario(f: FormData) {
     .from("questionario")
     .insert({ descricao, ativo })
     .select("idquestionario");
-  if (error) voltar("erro", falha(error.code), null, q);
+  if (error) voltar("erro", falha(error), null, q);
   voltar("ok", "Questionário criado.", null, String(data?.[0]?.idquestionario ?? q ?? ""));
 }
 
@@ -64,7 +69,7 @@ export async function salvarEtapa(f: FormData) {
   const { error } = id
     ? await supabase.from("etapa").update(dados).eq("idetapa", id)
     : await supabase.from("etapa").insert({ ...dados, idquestionario });
-  if (error) voltar("erro", falha(error.code), null, q);
+  if (error) voltar("erro", falha(error), null, q);
   voltar("ok", "Etapa salva.", null, q);
 }
 
@@ -97,7 +102,7 @@ export async function salvarPergunta(f: FormData) {
   const { data, error } = id
     ? await supabase.from("pergunta").update(dados).eq("idpergunta", id).select("idpergunta")
     : await supabase.from("pergunta").insert(dados).select("idpergunta");
-  if (error) voltar("erro", falha(error.code), null, q);
+  if (error) voltar("erro", falha(error), null, q);
   voltar("ok", "Pergunta salva.", String(data?.[0]?.idpergunta ?? id), q);
 }
 
@@ -115,7 +120,7 @@ export async function salvarPontuacao(f: FormData) {
   const { error } = id
     ? await supabase.from("pontuacao").update({ descricao, nota }).eq("idpontuacao", id)
     : await supabase.from("pontuacao").insert({ idpergunta, descricao, nota });
-  if (error) voltar("erro", falha(error.code), String(idpergunta), q);
+  if (error) voltar("erro", falha(error), String(idpergunta), q);
   voltar("ok", "Pontuação salva.", String(idpergunta), q);
 }
 
@@ -135,7 +140,7 @@ export async function excluir(f: FormData) {
   const q = texto(f, "q") || null;
   if (!chave || !id) voltar("erro", "Pedido inválido.", null, q);
   const { error } = await supabase.from(tabela).delete().eq(chave, id);
-  if (error) voltar("erro", falha(error.code), abrir, q);
+  if (error) voltar("erro", falha(error), abrir, q);
   if (tabela === "questionario") voltar("ok", "Questionário excluído.");
   voltar("ok", "Item excluído.", tabela === "pontuacao" ? abrir : null, q);
 }
