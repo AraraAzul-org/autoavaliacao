@@ -12,7 +12,7 @@ const ITENS = [
   { href: "/avaliacoes", rotulo: "Avaliações", pronto: true, restrito: true },
   { href: "/perguntas", rotulo: "Questionário", pronto: true, restrito: true },
   { href: "/minhas-avaliacoes", rotulo: "Minhas avaliações", pronto: true, restrito: false },
-  { href: "/assessorados", rotulo: "Meus assessorados", pronto: false, restrito: false },
+  { href: "/meus-assessorados", rotulo: "Meus assessorados", pronto: true, restrito: false },
 ];
 
 export function MenuItens({ diretor }: { diretor: boolean }) {

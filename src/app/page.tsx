@@ -30,8 +30,7 @@ export default async function Home() {
     );
   }
 
-  const [assessorados, grupo, avaliacao] = await Promise.all([
-    supabase.from("usuario").select("idusuario, nome, linha").eq("idapf", eu.idusuario).eq("ativo", true).order("nome"),
+  const [grupo, avaliacao] = await Promise.all([
     eu.diretor
       ? supabase
           .from("usuario")
@@ -90,7 +89,6 @@ export default async function Home() {
         <p className="text-sm text-gray-600">
           {eu.cargo?.descricao} · {avaliacao.data ? `Avaliação ${avaliacao.data.descricao}` : "Nenhuma avaliação aberta"}
         </p>
-        {!!assessorados.data?.length && <Lista titulo="Meus assessorados" pessoas={assessorados.data} />}
         {eu.diretor && <Lista titulo="Adultos do grupo" pessoas={grupo.data} />}
       </main>
     </Shell>

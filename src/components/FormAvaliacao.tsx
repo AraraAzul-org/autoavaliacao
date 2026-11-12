@@ -140,7 +140,7 @@ export function FormAvaliacao({
           <button type="submit" name="intencao" value="salvar" disabled={pendente} className={btnNeutro}>
             {pendente ? "Salvando..." : "Salvar respostas"}
           </button>
-          <button type="submit" name="intencao" value="concluir" disabled={pendente} className={btn}>
+          <button type="submit" name="intencao" value="concluir" disabled={pendente || faltam > 0} className={btn}>
             Concluir avaliação
           </button>
         </div>

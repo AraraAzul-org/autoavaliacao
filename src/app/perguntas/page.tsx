@@ -46,7 +46,7 @@ export default async function Perguntas({
   const etapas = selecionado
     ? ((await supabase
         .from("etapa")
-        .select("idetapa, descricao")
+        .select("idetapa, descricao, notaminima, etapaapf")
         .eq("idquestionario", selecionado.idquestionario)
         .order("idetapa")).data ?? [])
     : [];
@@ -135,10 +135,26 @@ export default async function Perguntas({
             </div>
 
             <div className="p-3">
-              <form action={salvarEtapa} className="flex flex-wrap gap-2">
+              <form action={salvarEtapa} className="flex flex-wrap items-end gap-2">
                 <input type="hidden" name="idquestionario" value={selecionado.idquestionario} />
                 <input type="hidden" name="q" value={selecionado.idquestionario} />
-                <input name="descricao" required placeholder="Nova etapa" className={`${campo} flex-1`} />
+                <label className="flex min-w-48 flex-1 flex-col text-sm">
+                  <span className="mb-1 text-gray-600">Nova etapa</span>
+                  <input name="descricao" required placeholder="Ex.: Comprometimento" className={campo} />
+                </label>
+                <label className="flex flex-col text-sm">
+                  <span className="mb-1 text-gray-600">Nota mínima</span>
+                  <input
+                    name="notaminima"
+                    inputMode="decimal"
+                    placeholder="Opcional"
+                    className={`${campo} w-28`}
+                  />
+                </label>
+                <label className="flex items-center gap-2 pb-2 text-sm">
+                  <input type="checkbox" name="etapaapf" />
+                  Etapa para APF
+                </label>
                 <button className={btn}>Adicionar etapa</button>
               </form>
               {!etapas.length && (
@@ -151,13 +167,42 @@ export default async function Perguntas({
         {etapas.map((et) => (
           <section key={et.idetapa} className="mt-6 overflow-hidden rounded border border-gray-200 bg-white">
             <div className="flex flex-wrap items-center gap-3 border-b-2 border-amarelo bg-azul p-3 text-white">
-              <h2 className="flex-1 font-semibold">{et.descricao}</h2>
+              <h2 className="flex-1 font-semibold">
+                {et.descricao}
+                {et.etapaapf && (
+                  <span className="ml-2 rounded bg-amarelo px-2 py-0.5 text-xs font-medium text-gray-900">
+                    Etapa para APF
+                  </span>
+                )}
+              </h2>
+              {et.notaminima != null && (
+                <span className="text-xs text-white/90">
+                  Nota mínima: {Number(et.notaminima).toLocaleString("pt-BR")}
+                </span>
+              )}
               <details className="text-sm text-gray-900">
                 <summary className="cursor-pointer text-white underline">Editar</summary>
-                <form action={salvarEtapa} className="mt-1 flex gap-2 rounded bg-white p-2">
+                <form action={salvarEtapa} className="mt-1 flex flex-wrap items-end gap-2 rounded bg-white p-2">
                   <input type="hidden" name="idetapa" value={et.idetapa} />
                   {selecionado && <input type="hidden" name="q" value={selecionado.idquestionario} />}
-                  <input name="descricao" required defaultValue={et.descricao} className={campo} />
+                  <label className="flex flex-col text-sm">
+                    <span className="mb-1 text-gray-600">Descrição</span>
+                    <input name="descricao" required defaultValue={et.descricao} className={campo} />
+                  </label>
+                  <label className="flex flex-col text-sm">
+                    <span className="mb-1 text-gray-600">Nota mínima</span>
+                    <input
+                      name="notaminima"
+                      inputMode="decimal"
+                      defaultValue={et.notaminima ?? ""}
+                      placeholder="Opcional"
+                      className={`${campo} w-28`}
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 pb-2 text-sm">
+                    <input type="checkbox" name="etapaapf" defaultChecked={!!et.etapaapf} />
+                    Etapa para APF
+                  </label>
                   <button className={btn}>Salvar</button>
                 </form>
               </details>
