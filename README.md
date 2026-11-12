@@ -1,40 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Avaliação de Adultos
 
-## Getting Started
+Sistema de autoavaliação dos adultos do grupo escoteiro. Cada adulto responde o
+questionário da avaliação aberta; diretores administram o cadastro e os APFs
+acompanham as respostas dos seus assessorados.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- [Next.js](https://nextjs.org) (App Router, TypeScript, Tailwind CSS)
+- [Supabase](https://supabase.com) (Postgres, autenticação e RLS)
+- [Vercel](https://vercel.com) (deploy automático a cada push na `main`)
+
+## Configuração local
+
+1. Copie `.env.example` para `.env.local`.
+2. Preencha com os dados do projeto Supabase
+   (Dashboard → Project Settings → API):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Instale as dependências e rode o servidor:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Acesse http://localhost:3000.
 
-## Learn More
+## Observações
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
----
-
-_Pipeline validado em 11/11/2026: alteração enviada via GitHub MCP e deploy automático na Vercel._
+- A chave `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` é pública por definição: ela vai
+  para o navegador. A proteção dos dados é feita pelo RLS no banco.
+- Nunca commite `.env.local` nem a chave `service_role`.
+- O schema, as políticas de acesso (RLS), os triggers e as funções ficam no
+  Supabase, não neste repositório.
+- Em produção, as variáveis de ambiente são configuradas no Vercel
+  (Project Settings → Environment Variables).
