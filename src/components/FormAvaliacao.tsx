@@ -149,7 +149,7 @@ export function FormAvaliacao({
       {aviso && (
         <div
           role="status"
-          className={`fixed bottom-4 right-4 z-50 max-w-sm rounded border p-3 text-sm shadow-lg ${
+          className={`fixed right-4 top-24 z-50 max-w-sm rounded border p-3 text-sm shadow-lg ${
             aviso.tipo === "ok" ? "border-green-300 bg-green-50 text-green-800" : "border-red-300 bg-red-50 text-red-700"
           }`}
         >
