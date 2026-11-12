@@ -8,6 +8,8 @@ import { carregarEu } from "@/lib/eu";
 
 type Eu = { idusuario: number };
 
+export type EstadoRespostas = { ok?: string; erro?: string };
+
 const hojeSP = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 
 async function exigirCadastro() {
@@ -43,35 +45,28 @@ async function contexto(supabase: SupabaseClient, eu: Eu, id: number) {
   return { av, au };
 }
 
-export async function salvarEtapa(f: FormData) {
-  const { supabase, eu } = await exigirCadastro();
-  const id = Number(f.get("idavaliacao"));
-  const idetapa = Number(f.get("idetapa"));
-  if (!Number.isInteger(id) || !Number.isInteger(idetapa)) redirect("/minhas-avaliacoes");
-
-  const ctx = await contexto(supabase, eu, id);
-  if (!ctx) voltar(id, "erro", "Esta avaliação não está disponível para você.");
-  const { av, au } = ctx;
-
-  if (au.status === "concluida") voltar(id, "erro", "Esta avaliação já foi concluída.");
-  if (av.status !== "aberta" || av.prazo < hojeSP())
-    voltar(id, "erro", "O prazo desta avaliação terminou; não é mais possível responder.");
-
+// Grava de uma vez todas as respostas enviadas no formulário, de qualquer etapa.
+async function gravar(supabase: SupabaseClient, eu: Eu, id: number, idquestionario: number, f: FormData) {
   const ids = f
     .getAll("pergunta")
     .map((x) => Number(x))
     .filter((x) => Number.isInteger(x));
-  if (!ids.length) voltar(id, "erro", "Pedido inválido.");
+  if (!ids.length) return { erro: "Pedido inválido." as string };
 
-  const [{ data: etapa }, { data: perguntas }, { data: pontuacoes }] = await Promise.all([
-    supabase.from("etapa").select("idetapa, idquestionario").eq("idetapa", idetapa).maybeSingle(),
-    supabase.from("pergunta").select("idpergunta, descritiva, idetapa").in("idpergunta", ids),
+  const { data: etapas } = await supabase
+    .from("etapa")
+    .select("idetapa")
+    .eq("idquestionario", idquestionario);
+  const idsEtapas = (etapas ?? []).map((e) => e.idetapa);
+  if (!idsEtapas.length) return { erro: "Este questionário ainda não tem perguntas." };
+
+  const [{ data: perguntas }, { data: pontuacoes }] = await Promise.all([
+    supabase.from("pergunta").select("idpergunta, descritiva").in("idetapa", idsEtapas),
     supabase.from("pontuacao").select("idpontuacao, idpergunta").in("idpergunta", ids),
   ]);
 
-  if (!etapa || etapa.idquestionario !== av.idquestionario) voltar(id, "erro", "Etapa inválida.");
-
-  const daEtapa = new Map((perguntas ?? []).map((p) => [p.idpergunta, p]));
+  // Só aceitamos perguntas que realmente pertencem ao questionário desta avaliação.
+  const daAvaliacao = new Map((perguntas ?? []).map((p) => [p.idpergunta, p]));
   const donoDaPontuacao = new Map((pontuacoes ?? []).map((o) => [o.idpontuacao, o.idpergunta]));
   const linhas: {
     idavaliacao: number;
@@ -82,13 +77,13 @@ export async function salvarEtapa(f: FormData) {
   }[] = [];
 
   for (const pid of ids) {
-    const p = daEtapa.get(pid);
-    if (!p || p.idetapa !== idetapa) continue;
+    const p = daAvaliacao.get(pid);
+    if (!p) continue;
 
     if (p.descritiva) {
       const texto = String(f.get(`t_${pid}`) ?? "").trim();
       if (!texto) continue;
-      if (texto.length > 2000) voltar(id, "erro", "A resposta descritiva pode ter no máximo 2.000 caracteres.");
+      if (texto.length > 2000) return { erro: "A resposta descritiva pode ter no máximo 2.000 caracteres." };
       linhas.push({ idavaliacao: id, idusuario: eu.idusuario, idpergunta: pid, idpontuacao: null, texto });
     } else {
       const valor = Number(f.get(`p_${pid}`));
@@ -97,12 +92,33 @@ export async function salvarEtapa(f: FormData) {
     }
   }
 
-  if (!linhas.length) voltar(id, "erro", "Responda ao menos uma pergunta desta etapa.");
+  if (!linhas.length) return { erro: "Responda ao menos uma pergunta antes de salvar." };
 
   const { error } = await supabase
     .from("resposta")
     .upsert(linhas, { onConflict: "idavaliacao,idusuario,idpergunta" });
-  if (error) voltar(id, "erro", "Não foi possível salvar as respostas. Tente novamente.");
+  if (error) return { erro: "Não foi possível salvar as respostas. Tente novamente." };
+
+  return { linhas: linhas.length };
+}
+
+// Salva todas as etapas de uma vez. O botão "Concluir avaliação" envia a mesma
+// ação com intencao = "concluir": assim as respostas são gravadas antes de fechar.
+export async function salvarRespostas(_anterior: EstadoRespostas, f: FormData): Promise<EstadoRespostas> {
+  const { supabase, eu } = await exigirCadastro();
+  const id = Number(f.get("idavaliacao"));
+  if (!Number.isInteger(id)) return { erro: "Pedido inválido." };
+
+  const ctx = await contexto(supabase, eu, id);
+  if (!ctx) return { erro: "Esta avaliação não está disponível para você." };
+  const { av, au } = ctx;
+
+  if (au.status === "concluida") return { erro: "Esta avaliação já foi concluída." };
+  if (av.status !== "aberta" || av.prazo < hojeSP())
+    return { erro: "O prazo desta avaliação terminou; não é mais possível responder." };
+
+  const gravou = await gravar(supabase, eu, id, av.idquestionario, f);
+  if (gravou.erro) return { erro: gravou.erro };
 
   if (au.status === "pendente") {
     await supabase
@@ -111,42 +127,36 @@ export async function salvarEtapa(f: FormData) {
       .eq("idavaliacaousuario", au.idavaliacaousuario);
   }
 
-  voltar(id, "ok", "Etapa salva.");
-}
+  if (String(f.get("intencao") ?? "salvar") === "concluir") {
+    const { data: etapas } = await supabase
+      .from("etapa")
+      .select("idetapa")
+      .eq("idquestionario", av.idquestionario);
+    const idsEtapas = (etapas ?? []).map((e) => e.idetapa);
 
-export async function concluirAvaliacao(f: FormData) {
-  const { supabase, eu } = await exigirCadastro();
-  const id = Number(f.get("idavaliacao"));
-  if (!Number.isInteger(id)) redirect("/minhas-avaliacoes");
+    const [{ count: total }, { count: respondidas }] = await Promise.all([
+      supabase.from("pergunta").select("idpergunta", { count: "exact", head: true }).in("idetapa", idsEtapas),
+      supabase
+        .from("resposta")
+        .select("idresposta", { count: "exact", head: true })
+        .eq("idavaliacao", id)
+        .eq("idusuario", eu.idusuario),
+    ]);
 
-  const ctx = await contexto(supabase, eu, id);
-  if (!ctx) voltar(id, "erro", "Esta avaliação não está disponível para você.");
-  const { av, au } = ctx;
+    const faltam = (total ?? 0) - (respondidas ?? 0);
+    if (faltam > 0)
+      return { erro: `Respostas salvas, mas ainda faltam ${faltam} ${faltam === 1 ? "pergunta" : "perguntas"} para concluir.` };
 
-  if (au.status === "concluida") voltar(id, "erro", "Esta avaliação já foi concluída.");
-  if (av.status !== "aberta" || av.prazo < hojeSP())
-    voltar(id, "erro", "O prazo desta avaliação terminou.");
+    const { error } = await supabase
+      .from("avaliacaousuario")
+      .update({ status: "concluida", dataconclusao: new Date().toISOString() })
+      .eq("idavaliacaousuario", au.idavaliacaousuario);
+    if (error) return { erro: "Não foi possível concluir a avaliação." };
 
-  const { data: etapas } = await supabase.from("etapa").select("idetapa").eq("idquestionario", av.idquestionario);
-  const idsEtapas = (etapas ?? []).map((e) => e.idetapa);
+    voltar(id, "ok", "Avaliação concluída. Obrigado!");
+  }
 
-  const [{ count: total }, { count: respondidas }] = await Promise.all([
-    supabase.from("pergunta").select("idpergunta", { count: "exact", head: true }).in("idetapa", idsEtapas),
-    supabase
-      .from("resposta")
-      .select("idresposta", { count: "exact", head: true })
-      .eq("idavaliacao", id)
-      .eq("idusuario", eu.idusuario),
-  ]);
-
-  const faltam = (total ?? 0) - (respondidas ?? 0);
-  if (faltam > 0) voltar(id, "erro", `Ainda faltam ${faltam} ${faltam === 1 ? "pergunta" : "perguntas"}.`);
-
-  const { error } = await supabase
-    .from("avaliacaousuario")
-    .update({ status: "concluida", dataconclusao: new Date().toISOString() })
-    .eq("idavaliacaousuario", au.idavaliacaousuario);
-  if (error) voltar(id, "erro", "Não foi possível concluir a avaliação.");
-
-  voltar(id, "ok", "Avaliação concluída. Obrigado!");
+  revalidatePath("/minhas-avaliacoes");
+  revalidatePath(`/minhas-avaliacoes/${id}`);
+  return { ok: "Respostas salvas." };
 }

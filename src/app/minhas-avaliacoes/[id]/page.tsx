@@ -3,13 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
-import { concluirAvaliacao, salvarEtapa } from "../actions";
+import { FormAvaliacao } from "@/components/FormAvaliacao";
 
 export const instant = false;
 
 const hojeSP = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 const dataBR = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
-const btn = "rounded bg-azul px-3 py-1.5 text-sm text-white hover:bg-azul-escuro disabled:cursor-not-allowed disabled:bg-gray-300";
 
 export default async function ResponderAvaliacao({
   params,
@@ -122,88 +121,37 @@ export default async function ResponderAvaliacao({
 
         {!etapas.length && <p className="mt-6 text-sm text-gray-600">Este questionário ainda não tem perguntas.</p>}
 
-        {etapas.map((et) => {
-          const daEtapa = perguntas.filter((p) => p.idetapa === et.idetapa);
-          if (!daEtapa.length) return null;
-          const feitasEtapa = daEtapa.filter((p) => respostaDa.has(p.idpergunta)).length;
-
-          return (
-            <section key={et.idetapa} className="mt-6 overflow-hidden rounded border border-gray-200 bg-white">
-              <div className="flex flex-wrap items-center gap-2 border-b-2 border-amarelo bg-azul p-3 text-white">
-                <h2 className="flex-1 text-sm font-semibold">{et.descricao}</h2>
-                <span className="text-xs text-white/90">
-                  {feitasEtapa} de {daEtapa.length}
-                </span>
-              </div>
-
-              <form action={salvarEtapa} className="p-3">
-                <input type="hidden" name="idavaliacao" value={id} />
-                <input type="hidden" name="idetapa" value={et.idetapa} />
-
-                {daEtapa.map((p) => {
-                  const resp = respostaDa.get(p.idpergunta);
-                  const opcoes = pontuacoes.filter((o) => o.idpergunta === p.idpergunta);
-                  return (
-                    <div key={p.idpergunta} className="border-b border-gray-100 py-3 last:border-0">
-                      <input type="hidden" name="pergunta" value={p.idpergunta} />
-                      <p className="text-sm font-medium text-gray-900">
-                        <span className="text-azul">{p.codigo}</span> — {p.descricao}
-                      </p>
-
-                      {p.descritiva ? (
-                        <textarea
-                          name={`t_${p.idpergunta}`}
-                          maxLength={2000}
-                          rows={3}
-                          disabled={somenteLeitura}
-                          defaultValue={resp?.texto ?? ""}
-                          placeholder={somenteLeitura ? "Sem resposta" : "Escreva sua resposta"}
-                          className="mt-2 w-full rounded border border-gray-300 p-2 text-sm disabled:bg-gray-50 disabled:text-gray-700"
-                        />
-                      ) : (
-                        <div className="mt-2 space-y-1">
-                          {opcoes.map((o) => (
-                            <label key={o.idpontuacao} className="flex items-start gap-2 text-sm text-gray-800">
-                              <input
-                                type="radio"
-                                name={`p_${p.idpergunta}`}
-                                value={o.idpontuacao}
-                                disabled={somenteLeitura}
-                                defaultChecked={resp?.idpontuacao === o.idpontuacao}
-                                className="mt-0.5"
-                              />
-                              <span>{o.descricao}</span>
-                            </label>
-                          ))}
-                          {!opcoes.length && <p className="text-sm text-red-700">Pergunta sem opções de resposta.</p>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {!somenteLeitura && (
-                  <div className="mt-3 flex justify-end">
-                    <button className={btn}>Salvar etapa</button>
-                  </div>
-                )}
-              </form>
-            </section>
-          );
-        })}
-
-        {!somenteLeitura && total > 0 && (
-          <form action={concluirAvaliacao} className="mt-6 flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-white p-3">
-            <input type="hidden" name="idavaliacao" value={id} />
-            <p className="min-w-48 flex-1 text-sm text-gray-600">
-              {feitas < total
-                ? `Faltam ${total - feitas} ${total - feitas === 1 ? "pergunta" : "perguntas"} para concluir. Você pode salvar e voltar depois.`
-                : "Tudo respondido. Ao concluir, a avaliação não poderá mais ser alterada."}
-            </p>
-            <button disabled={feitas < total} className={btn}>
-              Concluir avaliação
-            </button>
-          </form>
+        {etapas.length > 0 && (
+          <FormAvaliacao
+            idavaliacao={id}
+            somenteLeitura={somenteLeitura}
+            etapas={etapas.flatMap((et) => {
+              const daEtapa = perguntas.filter((p) => p.idetapa === et.idetapa);
+              if (!daEtapa.length) return [];
+              return [
+                {
+                  idetapa: et.idetapa,
+                  descricao: et.descricao,
+                  perguntas: daEtapa.map((p) => ({
+                    idpergunta: p.idpergunta,
+                    codigo: p.codigo,
+                    descricao: p.descricao,
+                    descritiva: p.descritiva,
+                    opcoes: pontuacoes
+                      .filter((o) => o.idpergunta === p.idpergunta)
+                      .map((o) => ({ idpontuacao: o.idpontuacao, descricao: o.descricao })),
+                  })),
+                },
+              ];
+            })}
+            respostas={Object.fromEntries(
+              perguntas.flatMap((p) => {
+                const r = respostaDa.get(p.idpergunta);
+                if (!r) return [];
+                return [[p.idpergunta, r.idpontuacao != null ? String(r.idpontuacao) : (r.texto ?? "")]];
+              }),
+            )}
+          />
         )}
       </main>
     </Shell>
