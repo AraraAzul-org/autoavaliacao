@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
 import { ConfirmarGeracao } from "@/components/ConfirmarGeracao";
-import { excluirAvaliacao, salvarAvaliacao } from "./actions";
+import { ConfirmarExclusao } from "@/components/ConfirmarExclusao";
+import { salvarAvaliacao } from "./actions";
 
 export const instant = false;
 
@@ -30,7 +31,7 @@ export default async function Avaliacoes({
 
   const { ok, erro } = await searchParams;
 
-  const [q, a, g, e, p] = await Promise.all([
+  const [q, a, g, e, p, r] = await Promise.all([
     supabase.from("questionario").select("idquestionario, descricao, ativo").order("descricao"),
     supabase
       .from("avaliacao")
@@ -39,6 +40,7 @@ export default async function Avaliacoes({
     supabase.from("avaliacaousuario").select("idavaliacao"),
     supabase.from("etapa").select("idetapa, idquestionario"),
     supabase.from("pergunta").select("idpergunta, idetapa"),
+    supabase.from("resposta").select("idavaliacao"),
   ]);
 
   const questionarios = q.data ?? [];
@@ -46,6 +48,9 @@ export default async function Avaliacoes({
   const nomeQuestionario = new Map(questionarios.map((x) => [x.idquestionario, x.descricao]));
   const geradas = new Map<number, number>();
   g.data?.forEach((x) => geradas.set(x.idavaliacao, (geradas.get(x.idavaliacao) ?? 0) + 1));
+
+  const respostas = new Map<number, number>();
+  r.data?.forEach((x) => respostas.set(x.idavaliacao, (respostas.get(x.idavaliacao) ?? 0) + 1));
 
   // Quantas perguntas cada questionário tem, para avisar quando está vazio.
   const questionarioDaEtapa = new Map((e.data ?? []).map((x) => [x.idetapa, x.idquestionario]));
@@ -96,6 +101,10 @@ export default async function Avaliacoes({
           Cada avaliação usa um questionário e tem um prazo. Ela nasce como <strong>rascunho</strong> e passa a{" "}
           <strong>aberta</strong> quando você gera as avaliações dos adultos.
         </p>
+        <p className="mt-1 text-xs text-gray-500">
+          Fase de desenvolvimento: qualquer avaliação pode ser excluída, inclusive as abertas e já preenchidas, para
+          corrigir o questionário e gerar de novo.
+        </p>
         {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
         {ok && <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">{ok}</p>}
 
@@ -140,17 +149,15 @@ export default async function Avaliacoes({
                     </form>
                   </details>
                 )}
-                {rascunho && (
-                  <div className="rounded bg-white px-2 py-1">
-                    <details className="text-sm">
-                      <summary className="cursor-pointer text-red-700 underline">Excluir</summary>
-                      <form action={excluirAvaliacao} className="mt-1">
-                        <input type="hidden" name="idavaliacao" value={av.idavaliacao} />
-                        <button className="rounded bg-red-700 px-2 py-1 text-white">Confirmar exclusão</button>
-                      </form>
-                    </details>
-                  </div>
-                )}
+                <div className="rounded bg-white px-2 py-1">
+                  <ConfirmarExclusao
+                    idavaliacao={av.idavaliacao}
+                    descricao={av.descricao}
+                    status={av.status}
+                    participantes={total}
+                    respostas={respostas.get(av.idavaliacao) ?? 0}
+                  />
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 text-sm text-gray-700">

@@ -57,7 +57,7 @@ export async function excluirAvaliacao(f: FormData) {
   if (!id) voltar("erro", "Pedido inválido.");
   const { error } = await supabase.from("avaliacao").delete().eq("idavaliacao", id);
   if (error) voltar("erro", mensagem(error));
-  voltar("ok", "Avaliação excluída.");
+  voltar("ok", "Avaliação excluída, junto com as avaliações individuais e as respostas.");
 }
 
 // Abre a avaliação e cria a avaliação de cada adulto ativo do grupo.
