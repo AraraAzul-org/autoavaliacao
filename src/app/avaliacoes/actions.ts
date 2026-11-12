@@ -23,6 +23,9 @@ const idDe = (f: FormData, k: string) => (f.get(k) ? Number(f.get(k)) : null);
 // Os triggers do banco já explicam as travas em português; aproveitamos a mensagem.
 function mensagem(erro?: { code?: string; message?: string }) {
   const m = erro?.message ?? "";
+  // P0001 é o código de RAISE EXCEPTION: as funções e triggers do banco
+  // escrevem mensagens em português já prontas para o usuário.
+  if (erro?.code === "P0001" && m) return m;
   if (/finalizada|preparação|status/.test(m)) return m;
   if (erro?.code === "23503") return "O questionário escolhido não existe mais. Recarregue a página.";
   if (erro?.code === "23502") return "Preencha descrição, questionário e prazo.";

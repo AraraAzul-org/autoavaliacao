@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
-import { excluirAvaliacao, gerarAvaliacao, salvarAvaliacao } from "./actions";
+import { ConfirmarGeracao } from "@/components/ConfirmarGeracao";
+import { excluirAvaliacao, salvarAvaliacao } from "./actions";
 
 export const instant = false;
 
@@ -29,13 +30,15 @@ export default async function Avaliacoes({
 
   const { ok, erro } = await searchParams;
 
-  const [q, a, g] = await Promise.all([
+  const [q, a, g, e, p] = await Promise.all([
     supabase.from("questionario").select("idquestionario, descricao, ativo").order("descricao"),
     supabase
       .from("avaliacao")
       .select("idavaliacao, descricao, prazo, status, datageracao, idquestionario")
       .order("prazo", { ascending: false }),
     supabase.from("avaliacaousuario").select("idavaliacao"),
+    supabase.from("etapa").select("idetapa, idquestionario"),
+    supabase.from("pergunta").select("idpergunta, idetapa"),
   ]);
 
   const questionarios = q.data ?? [];
@@ -43,6 +46,14 @@ export default async function Avaliacoes({
   const nomeQuestionario = new Map(questionarios.map((x) => [x.idquestionario, x.descricao]));
   const geradas = new Map<number, number>();
   g.data?.forEach((x) => geradas.set(x.idavaliacao, (geradas.get(x.idavaliacao) ?? 0) + 1));
+
+  // Quantas perguntas cada questionário tem, para avisar quando está vazio.
+  const questionarioDaEtapa = new Map((e.data ?? []).map((x) => [x.idetapa, x.idquestionario]));
+  const perguntasPorQuestionario = new Map<number, number>();
+  p.data?.forEach((x) => {
+    const qid = questionarioDaEtapa.get(x.idetapa);
+    if (qid != null) perguntasPorQuestionario.set(qid, (perguntasPorQuestionario.get(qid) ?? 0) + 1);
+  });
 
   const Campos = ({ valores }: { valores?: typeof avaliacoes[number] }) => (
     <>
@@ -145,6 +156,9 @@ export default async function Avaliacoes({
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 text-sm text-gray-700">
                 <span>
                   Questionário: <strong>{nomeQuestionario.get(av.idquestionario) ?? "—"}</strong>
+                  {rascunho && (perguntasPorQuestionario.get(av.idquestionario) ?? 0) === 0 && (
+                    <span className="text-red-700"> (sem perguntas)</span>
+                  )}
                 </span>
                 <span>
                   Prazo: <strong>{dataBR(av.prazo)}</strong>
@@ -158,22 +172,11 @@ export default async function Avaliacoes({
                   </span>
                 )}
                 {av.status !== "finalizada" && (
-                  <details className="ml-auto text-sm">
-                    <summary className="cursor-pointer rounded border border-azul px-2 py-1 text-xs font-medium text-azul hover:bg-azul/10">
-                      {rascunho ? "Gerar avaliações" : "Incluir novos adultos"}
-                    </summary>
-                    <form action={gerarAvaliacao} className="mt-2 flex flex-col items-end gap-1">
-                      <input type="hidden" name="idavaliacao" value={av.idavaliacao} />
-                      <p className="max-w-72 text-right text-xs text-gray-600">
-                        {rascunho
-                          ? "A avaliação fica aberta e cada adulto ativo do grupo recebe a sua. As perguntas vêm do questionário escolhido."
-                          : "Inclui somente quem ainda não tem avaliação nesta pesquisa."}
-                      </p>
-                      <button className="rounded bg-azul px-2 py-1 text-xs text-white hover:bg-azul-escuro">
-                        Confirmar geração
-                      </button>
-                    </form>
-                  </details>
+                  <ConfirmarGeracao
+                    idavaliacao={av.idavaliacao}
+                    rascunho={rascunho}
+                    semPerguntas={(perguntasPorQuestionario.get(av.idquestionario) ?? 0) === 0}
+                  />
                 )}
               </div>
             </section>
