@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
 import { FormAvaliacao } from "@/components/FormAvaliacao";
+import { SecaoRespostas } from "@/components/SecaoRespostas";
 
 export const instant = false;
 
@@ -11,16 +12,29 @@ const hojeSP = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America
 const dataBR = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 
 const SELOS: Record<string, { rotulo: string; classe: string }> = {
-  concluida: { rotulo: "Concluída", classe: "bg-green-100 text-green-800" },
+  concluida: { rotulo: "APF concluído", classe: "bg-green-100 text-green-800" },
   vencida: { rotulo: "Prazo vencido", classe: "bg-red-100 text-red-800" },
   em_andamento: { rotulo: "Em andamento", classe: "bg-amber-100 text-amber-900" },
   pendente: { rotulo: "Não iniciada", classe: "bg-gray-100 text-gray-700" },
 };
 
+type Nivel = "usuario" | "apf" | "diretor";
+type EtapaBase = { idetapa: number; descricao: string; publico: Nivel };
+type PerguntaBase = {
+  idpergunta: number;
+  codigo: string;
+  descricao: string;
+  idetapa: number;
+  descritiva: boolean;
+};
+type PontuacaoBase = { idpontuacao: number; idpergunta: number; descricao: string; nota: number };
+
 export default async function RespostasDoAssessorado({
   params,
+  searchParams,
 }: {
   params: Promise<{ idusuario: string; idavaliacao: string }>;
+  searchParams: Promise<{ ok?: string; erro?: string }>;
 }) {
   const { idusuario: idUsuarioTexto, idavaliacao: idAvaliacaoTexto } = await params;
   const idusuario = Number(idUsuarioTexto);
@@ -31,8 +45,10 @@ export default async function RespostasDoAssessorado({
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
 
+  const { ok, erro } = await searchParams;
+
   const [{ data: pessoa }, { data: av }] = await Promise.all([
-    supabase.from("usuario").select("idusuario, nome, linha").eq("idusuario", idusuario).maybeSingle(),
+    supabase.from("usuario").select("idusuario, nome, linha, idapf").eq("idusuario", idusuario).maybeSingle(),
     supabase
       .from("avaliacao")
       .select("idavaliacao, descricao, prazo, status, idquestionario")
@@ -40,10 +56,12 @@ export default async function RespostasDoAssessorado({
       .maybeSingle(),
   ]);
   if (!pessoa || !av) notFound();
+  // Esta tela é do APF do adulto avaliado.
+  if (pessoa.idapf !== eu.idusuario) notFound();
 
   const { data: au } = await supabase
     .from("avaliacaousuario")
-    .select("status, datainicio, dataconclusao")
+    .select("status, datainicio, dataconclusao, concluiapf, concluirdiretor")
     .eq("idavaliacao", id)
     .eq("idusuario", idusuario)
     .maybeSingle();
@@ -51,10 +69,10 @@ export default async function RespostasDoAssessorado({
 
   const { data: etapasData } = await supabase
     .from("etapa")
-    .select("idetapa, descricao")
+    .select("idetapa, descricao, publico")
     .eq("idquestionario", av.idquestionario)
     .order("idetapa");
-  const etapas = etapasData ?? [];
+  const etapas = (etapasData ?? []) as EtapaBase[];
   const idsEtapas = etapas.map((e) => e.idetapa);
 
   const { data: perguntasData } = idsEtapas.length
@@ -63,8 +81,8 @@ export default async function RespostasDoAssessorado({
         .select("idpergunta, codigo, descricao, idetapa, descritiva")
         .in("idetapa", idsEtapas)
         .order("codigo")
-    : { data: [] as { idpergunta: number; codigo: string; descricao: string; idetapa: number; descritiva: boolean }[] };
-  const perguntas = perguntasData ?? [];
+    : { data: [] as PerguntaBase[] };
+  const perguntas = (perguntasData ?? []) as PerguntaBase[];
   const idsPerguntas = perguntas.map((p) => p.idpergunta);
 
   const { data: pontuacoesData } = idsPerguntas.length
@@ -73,8 +91,8 @@ export default async function RespostasDoAssessorado({
         .select("idpontuacao, idpergunta, descricao, nota")
         .in("idpergunta", idsPerguntas)
         .order("nota")
-    : { data: [] as { idpontuacao: number; idpergunta: number; descricao: string; nota: number }[] };
-  const pontuacoes = pontuacoesData ?? [];
+    : { data: [] as PontuacaoBase[] };
+  const pontuacoes = (pontuacoesData ?? []) as PontuacaoBase[];
 
   const { data: respostasData } = await supabase
     .from("resposta")
@@ -83,14 +101,56 @@ export default async function RespostasDoAssessorado({
     .eq("idusuario", idusuario);
   const respostaDa = new Map((respostasData ?? []).map((r) => [r.idpergunta, r]));
 
-  const concluida = au.status === "concluida";
-  const vencida = !concluida && av.prazo.slice(0, 10) < hojeSP();
-  const chave = vencida ? "vencida" : au.status;
+  const montarEtapas = (nivel: Nivel) =>
+    etapas
+      .filter((et) => et.publico === nivel)
+      .flatMap((et) => {
+        const daEtapa = perguntas.filter((p) => p.idetapa === et.idetapa);
+        if (!daEtapa.length) return [];
+        return [
+          {
+            idetapa: et.idetapa,
+            descricao: et.descricao,
+            perguntas: daEtapa.map((p) => ({
+              idpergunta: p.idpergunta,
+              codigo: p.codigo,
+              descricao: p.descricao,
+              descritiva: p.descritiva,
+              opcoes: pontuacoes
+                .filter((o) => o.idpergunta === p.idpergunta)
+                .map((o) => ({ idpontuacao: o.idpontuacao, descricao: o.descricao })),
+            })),
+          },
+        ];
+      });
+
+  const etapasUsuario = montarEtapas("usuario");
+  const etapasApf = montarEtapas("apf");
+
+  const respostas = Object.fromEntries(
+    perguntas.flatMap((p) => {
+      const r = respostaDa.get(p.idpergunta);
+      if (!r) return [];
+      return [[p.idpergunta, r.idpontuacao != null ? String(r.idpontuacao) : (r.texto ?? "")]];
+    }),
+  );
+
+  const aberta = av.status === "aberta" && av.prazo.slice(0, 10) >= hojeSP();
+  const concluido = au.concluiapf != null;
+  const somenteLeitura = concluido || !aberta;
+  const vencida = !concluido && av.prazo.slice(0, 10) < hojeSP();
+  const chave = concluido ? "concluida" : vencida ? "vencida" : au.status;
   const selo = SELOS[chave] ?? SELOS.pendente;
 
-  const total = perguntas.length;
-  const feitas = perguntas.filter((p) => respostaDa.has(p.idpergunta)).length;
+  const doApf = etapasApf.flatMap((e) => e.perguntas);
+  const total = doApf.length;
+  const feitas = doApf.filter((p) => respostaDa.has(p.idpergunta)).length;
   const pct = total ? Math.round((feitas / total) * 100) : 0;
+
+  const bloqueioConclusao =
+    !somenteLeitura && au.status !== "concluida"
+      ? "O usuário ainda não concluiu a avaliação. O APF só pode concluir depois do usuário."
+      : null;
 
   return (
     <Shell>
@@ -105,58 +165,53 @@ export default async function RespostasDoAssessorado({
         </div>
         <p className="mt-1 text-sm text-gray-600">
           {pessoa.nome} · Prazo: <strong>{dataBR(av.prazo)}</strong>
-          {concluida && au.dataconclusao ? ` · concluída em ${dataBR(au.dataconclusao)}` : ""}
+          {concluido && au.concluiapf ? ` · APF concluído em ${dataBR(au.concluiapf)}` : ""}
         </p>
 
-        <div className="mt-3">
-          <div className="h-2 overflow-hidden rounded bg-gray-200">
-            <div className="h-full rounded bg-azul" style={{ width: `${pct}%` }} />
+        {total > 0 && (
+          <div className="mt-3">
+            <div className="h-2 overflow-hidden rounded bg-gray-200">
+              <div className="h-full rounded bg-azul" style={{ width: `${pct}%` }} />
+            </div>
+            <p className="mt-1 text-xs text-gray-600">
+              Etapa do APF: {feitas} de {total} {total === 1 ? "pergunta respondida" : "perguntas respondidas"}
+            </p>
           </div>
-          <p className="mt-1 text-xs text-gray-600">
-            {feitas} de {total} {total === 1 ? "pergunta respondida" : "perguntas respondidas"}
-          </p>
-        </div>
+        )}
+
+        {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
+        {ok && <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">{ok}</p>}
 
         <p className="mt-3 rounded bg-gray-100 p-2 text-sm text-gray-700">
-          {concluida
-            ? "Esta avaliação foi concluída e está disponível apenas para consulta."
-            : vencida
-              ? `O prazo desta avaliação terminou em ${dataBR(av.prazo)}. As respostas já enviadas continuam disponíveis para consulta.`
-              : "Somente leitura: você está vendo as respostas deste adulto como APF."}
+          {concluido
+            ? "A etapa do APF foi concluída e está disponível apenas para consulta."
+            : !aberta
+              ? vencida
+                ? `O prazo desta avaliação terminou em ${dataBR(av.prazo)}. As respostas já enviadas continuam disponíveis para consulta.`
+                : "Esta avaliação não está mais aberta para respostas."
+              : "Você está vendo as respostas do usuário e pode responder as perguntas do APF."}
         </p>
 
-        {!etapas.length && <p className="mt-6 text-sm text-gray-600">Este questionário ainda não tem perguntas.</p>}
+        <SecaoRespostas
+          etapas={etapasUsuario}
+          respostas={respostas}
+          titulo="Respostas do usuário"
+          nota="Somente leitura."
+        />
 
-        {etapas.length > 0 && (
+        {!etapasApf.length && (
+          <p className="mt-6 text-sm text-gray-600">Este questionário não tem perguntas para o APF.</p>
+        )}
+
+        {etapasApf.length > 0 && (
           <FormAvaliacao
             idavaliacao={id}
-            somenteLeitura
-            etapas={etapas.flatMap((et) => {
-              const daEtapa = perguntas.filter((p) => p.idetapa === et.idetapa);
-              if (!daEtapa.length) return [];
-              return [
-                {
-                  idetapa: et.idetapa,
-                  descricao: et.descricao,
-                  perguntas: daEtapa.map((p) => ({
-                    idpergunta: p.idpergunta,
-                    codigo: p.codigo,
-                    descricao: p.descricao,
-                    descritiva: p.descritiva,
-                    opcoes: pontuacoes
-                      .filter((o) => o.idpergunta === p.idpergunta)
-                      .map((o) => ({ idpontuacao: o.idpontuacao, descricao: o.descricao })),
-                  })),
-                },
-              ];
-            })}
-            respostas={Object.fromEntries(
-              perguntas.flatMap((p) => {
-                const r = respostaDa.get(p.idpergunta);
-                if (!r) return [];
-                return [[p.idpergunta, r.idpontuacao != null ? String(r.idpontuacao) : (r.texto ?? "")]];
-              }),
-            )}
+            idusuario={idusuario}
+            nivel="apf"
+            somenteLeitura={somenteLeitura}
+            bloqueioConclusao={bloqueioConclusao}
+            etapas={etapasApf}
+            respostas={respostas}
           />
         )}
       </main>

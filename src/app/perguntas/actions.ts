@@ -60,12 +60,14 @@ export async function salvarEtapa(f: FormData) {
   const q = texto(f, "q") || (idquestionario ? String(idquestionario) : null);
   const notaTexto = texto(f, "notaminima");
   const notaminima = notaTexto === "" ? null : Number(notaTexto.replace(",", "."));
-  const etapaapf = f.get("etapaapf") === "on";
+  const publico = texto(f, "publico");
   if (!descricao) voltar("erro", "Informe a descrição da etapa.", null, q);
   if (notaminima != null && Number.isNaN(notaminima))
     voltar("erro", "Informe uma nota mínima numérica.", null, q);
+  if (!["usuario", "apf", "diretor"].includes(publico))
+    voltar("erro", "Escolha quem responde as perguntas desta etapa.", null, q);
   if (!id && !idquestionario) voltar("erro", "Escolha o questionário da etapa.", null, q);
-  const dados = { descricao, notaminima, etapaapf };
+  const dados = { descricao, notaminima, publico };
   const { error } = id
     ? await supabase.from("etapa").update(dados).eq("idetapa", id)
     : await supabase.from("etapa").insert({ ...dados, idquestionario });

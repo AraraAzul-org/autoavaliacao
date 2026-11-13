@@ -64,7 +64,11 @@ export default async function MinhasAvaliacoes() {
   const questionarios = [...new Set(minhas.map((m) => m.avaliacao.idquestionario))];
 
   const { data: etapas } = questionarios.length
-    ? await supabase.from("etapa").select("idetapa, idquestionario").in("idquestionario", questionarios)
+    ? await supabase
+        .from("etapa")
+        .select("idetapa, idquestionario")
+        .in("idquestionario", questionarios)
+        .eq("publico", "usuario")
     : { data: [] as { idetapa: number; idquestionario: number }[] };
 
   const idsEtapas = (etapas ?? []).map((e) => e.idetapa);

@@ -24,6 +24,9 @@ const SELOS: Record<string, Selo> = {
   pendente: { rotulo: "Não iniciada", classe: "bg-gray-100 text-gray-700" },
 };
 
+type Nivel = "usuario" | "apf" | "diretor";
+type Contagem = Record<Nivel, number>;
+
 type Avaliacao = {
   idavaliacao: number;
   descricao: string;
@@ -36,8 +39,11 @@ type Participacao = {
   idavaliacaousuario: number;
   status: string;
   dataconclusao: string | null;
+  concluiapf: string | null;
   avaliacao: Avaliacao;
 };
+
+const vazio = (): Contagem => ({ usuario: 0, apf: 0, diretor: 0 });
 
 export default async function AvaliacoesDoAssessorado({
   params,
@@ -54,7 +60,7 @@ export default async function AvaliacoesDoAssessorado({
 
   const { data: pessoa } = await supabase
     .from("usuario")
-    .select("idusuario, nome, linha, cargo:cargo(descricao)")
+    .select("idusuario, nome, linha, idapf, cargo:cargo(descricao)")
     .eq("idusuario", idusuario)
     .maybeSingle();
   if (!pessoa) notFound();
@@ -63,7 +69,7 @@ export default async function AvaliacoesDoAssessorado({
   const { data } = await supabase
     .from("avaliacaousuario")
     .select(
-      "idavaliacaousuario, status, dataconclusao, avaliacao:avaliacao(idavaliacao, descricao, prazo, status, idquestionario)",
+      "idavaliacaousuario, status, dataconclusao, concluiapf, avaliacao:avaliacao(idavaliacao, descricao, prazo, status, idquestionario)",
     )
     .eq("idusuario", idusuario)
     .order("idavaliacaousuario", { ascending: false });
@@ -79,24 +85,32 @@ export default async function AvaliacoesDoAssessorado({
   const questionarios = [...new Set(avaliacoes.map((m) => m.avaliacao.idquestionario))];
 
   const { data: etapas } = questionarios.length
-    ? await supabase.from("etapa").select("idetapa, idquestionario").in("idquestionario", questionarios)
-    : { data: [] as { idetapa: number; idquestionario: number }[] };
+    ? await supabase.from("etapa").select("idetapa, idquestionario, publico").in("idquestionario", questionarios)
+    : { data: [] as { idetapa: number; idquestionario: number; publico: Nivel }[] };
 
   const idsEtapas = (etapas ?? []).map((e) => e.idetapa);
-  const questionarioDaEtapa = new Map((etapas ?? []).map((e) => [e.idetapa, e.idquestionario]));
+  const infoDaEtapa = new Map(
+    (etapas ?? []).map((e) => [e.idetapa, { idquestionario: e.idquestionario, publico: e.publico as Nivel }]),
+  );
 
   const { data: perguntas } = idsEtapas.length
     ? await supabase.from("pergunta").select("idpergunta, idetapa").in("idetapa", idsEtapas)
     : { data: [] as { idpergunta: number; idetapa: number }[] };
 
-  const questionarioDaPergunta = new Map(
-    (perguntas ?? []).map((p) => [p.idpergunta, questionarioDaEtapa.get(p.idetapa)]),
+  const infoDaPergunta = new Map(
+    (perguntas ?? []).flatMap((p) => {
+      const info = infoDaEtapa.get(p.idetapa);
+      return info ? [[p.idpergunta, info] as const] : [];
+    }),
   );
 
-  const totalPorQuestionario = new Map<number, number>();
+  const totais = new Map<number, Contagem>();
   (perguntas ?? []).forEach((p) => {
-    const q = questionarioDaPergunta.get(p.idpergunta);
-    if (q != null) totalPorQuestionario.set(q, (totalPorQuestionario.get(q) ?? 0) + 1);
+    const info = infoDaPergunta.get(p.idpergunta);
+    if (!info) return;
+    const t = totais.get(info.idquestionario) ?? vazio();
+    t[info.publico] += 1;
+    totais.set(info.idquestionario, t);
   });
 
   const { data: respostas } = await supabase
@@ -104,14 +118,13 @@ export default async function AvaliacoesDoAssessorado({
     .select("idavaliacao, idpergunta")
     .eq("idusuario", idusuario);
 
-  const respondidas = new Map<number, number>();
+  const respondidas = new Map<number, Contagem>();
   (respostas ?? []).forEach((r) => {
-    const q = questionarioDaPergunta.get(r.idpergunta);
-    if (q == null) return;
-    const av = avaliacoes.find((m) => m.avaliacao.idavaliacao === r.idavaliacao);
-    if (av && av.avaliacao.idquestionario === q) {
-      respondidas.set(r.idavaliacao, (respondidas.get(r.idavaliacao) ?? 0) + 1);
-    }
+    const info = infoDaPergunta.get(r.idpergunta);
+    if (!info) return;
+    const feitas = respondidas.get(r.idavaliacao) ?? vazio();
+    feitas[info.publico] += 1;
+    respondidas.set(r.idavaliacao, feitas);
   });
 
   return (
@@ -135,12 +148,13 @@ export default async function AvaliacoesDoAssessorado({
 
         {avaliacoes.map((m) => {
           const av = m.avaliacao;
-          const total = totalPorQuestionario.get(av.idquestionario) ?? 0;
-          const feitas = respondidas.get(av.idavaliacao) ?? 0;
+          const total = totais.get(av.idquestionario) ?? vazio();
+          const feitas = respondidas.get(av.idavaliacao) ?? vazio();
           const vencida = m.status !== "concluida" && av.prazo.slice(0, 10) < hojeSP();
           const chave = vencida ? "vencida" : m.status === "concluida" ? "concluida" : m.status;
           const selo = SELOS[chave] ?? SELOS.pendente;
-          const pct = total ? Math.round((feitas / total) * 100) : 0;
+          const pctUsuario = total.usuario ? Math.round((feitas.usuario / total.usuario) * 100) : 0;
+          const pctApf = total.apf ? Math.round((feitas.apf / total.apf) * 100) : 0;
           const dias = diasAte(av.prazo);
 
           return (
@@ -153,7 +167,7 @@ export default async function AvaliacoesDoAssessorado({
                   <h2 className="font-semibold text-gray-900">{av.descricao}</h2>
                   <p className="mt-0.5 text-sm text-gray-600">
                     {m.status === "concluida" && m.dataconclusao
-                      ? `Concluída em ${dataBR(m.dataconclusao)}`
+                      ? `Usuário concluiu em ${dataBR(m.dataconclusao)}`
                       : vencida
                         ? `Prazo encerrado em ${dataBR(av.prazo)}`
                         : dias === 0
@@ -162,22 +176,45 @@ export default async function AvaliacoesDoAssessorado({
                   </p>
                 </div>
                 <span className={`rounded px-2 py-0.5 text-xs font-medium ${selo.classe}`}>{selo.rotulo}</span>
+                {m.concluiapf && (
+                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                    APF concluído
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4 text-sm text-gray-700">
-                <div className="min-w-40 flex-1">
-                  <div className="h-2 overflow-hidden rounded bg-gray-200">
-                    <div className="h-full rounded bg-azul" style={{ width: `${pct}%` }} />
+                <div className="min-w-48 flex-1 space-y-2">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 text-xs text-gray-600">
+                      <span>Usuário</span>
+                      <span>
+                        {feitas.usuario} de {total.usuario} respondidas
+                      </span>
+                    </div>
+                    <div className="mt-1 h-2 overflow-hidden rounded bg-gray-200">
+                      <div className="h-full rounded bg-azul" style={{ width: `${pctUsuario}%` }} />
+                    </div>
                   </div>
-                  <p className="mt-1 text-xs text-gray-600">
-                    {feitas} de {total} {total === 1 ? "pergunta respondida" : "perguntas respondidas"}
-                  </p>
+                  {total.apf > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between gap-2 text-xs text-gray-600">
+                        <span>APF</span>
+                        <span>
+                          {feitas.apf} de {total.apf} respondidas
+                        </span>
+                      </div>
+                      <div className="mt-1 h-2 overflow-hidden rounded bg-gray-200">
+                        <div className="h-full rounded bg-azul" style={{ width: `${pctApf}%` }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <Link
                   href={`/meus-assessorados/${idusuario}/${av.idavaliacao}`}
                   className="rounded bg-azul px-3 py-1.5 text-sm text-white hover:bg-azul-escuro"
                 >
-                  Ver perguntas e respostas
+                  Ver respostas e responder
                 </Link>
               </div>
             </section>

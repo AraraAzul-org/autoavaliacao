@@ -2,12 +2,20 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { NIVEIS, ROTULO_NIVEL, type Nivel } from "@/lib/niveis";
 import { excluir, salvarEtapa, salvarPergunta, salvarPontuacao, salvarQuestionario } from "./actions";
 
 export const instant = false;
 
 const campo = "rounded border border-gray-300 p-1.5 text-sm";
 const btn = "rounded bg-azul px-3 py-1.5 text-sm text-white hover:bg-azul-escuro";
+
+const seloNivel = (publico: string) =>
+  publico === "apf"
+    ? "bg-amarelo text-gray-900"
+    : publico === "diretor"
+      ? "bg-white text-azul"
+      : "bg-white/90 text-gray-800";
 
 function Excluir({ tabela, id, abrir, q }: { tabela: string; id: number; abrir?: number; q?: number }) {
   return (
@@ -46,7 +54,7 @@ export default async function Perguntas({
   const etapas = selecionado
     ? ((await supabase
         .from("etapa")
-        .select("idetapa, descricao, notaminima, etapaapf")
+        .select("idetapa, descricao, notaminima, publico")
         .eq("idquestionario", selecionado.idquestionario)
         .order("idetapa")).data ?? [])
     : [];
@@ -151,9 +159,15 @@ export default async function Perguntas({
                     className={`${campo} w-28`}
                   />
                 </label>
-                <label className="flex items-center gap-2 pb-2 text-sm">
-                  <input type="checkbox" name="etapaapf" />
-                  Etapa para APF
+                <label className="flex flex-col text-sm">
+                  <span className="mb-1 text-gray-600">Perguntas respondidas por</span>
+                  <select name="publico" defaultValue="usuario" className={campo}>
+                    {NIVEIS.map((n) => (
+                      <option key={n.valor} value={n.valor}>
+                        {n.rotulo}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <button className={btn}>Adicionar etapa</button>
               </form>
@@ -169,11 +183,9 @@ export default async function Perguntas({
             <div className="flex flex-wrap items-center gap-3 border-b-2 border-amarelo bg-azul p-3 text-white">
               <h2 className="flex-1 font-semibold">
                 {et.descricao}
-                {et.etapaapf && (
-                  <span className="ml-2 rounded bg-amarelo px-2 py-0.5 text-xs font-medium text-gray-900">
-                    Etapa para APF
-                  </span>
-                )}
+                <span className={`ml-2 rounded px-2 py-0.5 text-xs font-medium ${seloNivel(et.publico)}`}>
+                  {ROTULO_NIVEL[et.publico as Nivel] ?? "Usuário"}
+                </span>
               </h2>
               {et.notaminima != null && (
                 <span className="text-xs text-white/90">
@@ -199,9 +211,15 @@ export default async function Perguntas({
                       className={`${campo} w-28`}
                     />
                   </label>
-                  <label className="flex items-center gap-2 pb-2 text-sm">
-                    <input type="checkbox" name="etapaapf" defaultChecked={!!et.etapaapf} />
-                    Etapa para APF
+                  <label className="flex flex-col text-sm">
+                    <span className="mb-1 text-gray-600">Perguntas respondidas por</span>
+                    <select name="publico" defaultValue={et.publico} className={campo}>
+                      {NIVEIS.map((n) => (
+                        <option key={n.valor} value={n.valor}>
+                          {n.rotulo}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <button className={btn}>Salvar</button>
                 </form>

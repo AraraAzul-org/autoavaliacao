@@ -46,6 +46,7 @@ export default async function ResponderAvaliacao({
     .from("etapa")
     .select("idetapa, descricao")
     .eq("idquestionario", av.idquestionario)
+    .eq("publico", "usuario")
     .order("idetapa");
   const etapas = etapasData ?? [];
   const idsEtapas = etapas.map((e) => e.idetapa);
@@ -119,11 +120,15 @@ export default async function ResponderAvaliacao({
           </p>
         )}
 
-        {!etapas.length && <p className="mt-6 text-sm text-gray-600">Este questionário ainda não tem perguntas.</p>}
+        {!etapas.length && (
+          <p className="mt-6 text-sm text-gray-600">Este questionário não tem perguntas para o usuário.</p>
+        )}
 
         {etapas.length > 0 && (
           <FormAvaliacao
             idavaliacao={id}
+            idusuario={eu.idusuario}
+            nivel="usuario"
             somenteLeitura={somenteLeitura}
             etapas={etapas.flatMap((et) => {
               const daEtapa = perguntas.filter((p) => p.idetapa === et.idetapa);

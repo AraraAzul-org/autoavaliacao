@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { salvarRespostas, type EstadoRespostas } from "@/app/minhas-avaliacoes/actions";
+import type { Nivel } from "@/lib/niveis";
 
 type Opcao = { idpontuacao: number; descricao: string };
 type Pergunta = {
@@ -21,18 +22,24 @@ const btnNeutro =
 
 export function FormAvaliacao({
   idavaliacao,
+  idusuario,
+  nivel,
   etapas,
   respostas,
   somenteLeitura,
+  bloqueioConclusao,
 }: {
   idavaliacao: number;
+  idusuario: number;
+  nivel: Nivel;
   etapas: Etapa[];
   respostas: Record<number, string>;
   somenteLeitura: boolean;
+  bloqueioConclusao?: string | null;
 }) {
-  // Todas as etapas ficam em um único formulário controlado. Assim qualquer
-  // salvamento grava tudo o que está na tela e as respostas continuam visíveis
-  // depois de salvar, sem o React limpar os campos.
+  // Todas as etapas do nível ficam em um único formulário controlado. Assim
+  // qualquer salvamento grava tudo o que está na tela e as respostas continuam
+  // visíveis depois de salvar, sem o React limpar os campos.
   const [valores, setValores] = useState<Record<number, string>>(() => {
     const inicial: Record<number, string> = {};
     etapas.forEach((et) => et.perguntas.forEach((p) => (inicial[p.idpergunta] = respostas[p.idpergunta] ?? "")));
@@ -69,6 +76,8 @@ export function FormAvaliacao({
   return (
     <form action={acao}>
       <input type="hidden" name="idavaliacao" value={idavaliacao} />
+      <input type="hidden" name="idusuario" value={idusuario} />
+      <input type="hidden" name="nivel" value={nivel} />
 
       {etapas.map((et) => {
         const feitasEtapa = et.perguntas.filter((p) => (valores[p.idpergunta] ?? "") !== "").length;
@@ -133,14 +142,22 @@ export function FormAvaliacao({
       {!somenteLeitura && total > 0 && (
         <div className="sticky bottom-0 z-10 mt-6 flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-white p-3 shadow-sm">
           <p className="min-w-48 flex-1 text-sm text-gray-600">
-            {faltam > 0
-              ? `Faltam ${faltam} ${faltam === 1 ? "pergunta" : "perguntas"} para concluir. Você pode salvar e voltar depois.`
-              : "Tudo respondido. Ao concluir, a avaliação não poderá mais ser alterada."}
+            {bloqueioConclusao
+              ? bloqueioConclusao
+              : faltam > 0
+                ? `Faltam ${faltam} ${faltam === 1 ? "pergunta" : "perguntas"} para concluir. Você pode salvar e voltar depois.`
+                : "Tudo respondido. Ao concluir, esta etapa não poderá mais ser alterada."}
           </p>
           <button type="submit" name="intencao" value="salvar" disabled={pendente} className={btnNeutro}>
             {pendente ? "Salvando..." : "Salvar respostas"}
           </button>
-          <button type="submit" name="intencao" value="concluir" disabled={pendente || faltam > 0} className={btn}>
+          <button
+            type="submit"
+            name="intencao"
+            value="concluir"
+            disabled={pendente || faltam > 0 || !!bloqueioConclusao}
+            className={btn}
+          >
             Concluir avaliação
           </button>
         </div>

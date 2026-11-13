@@ -85,7 +85,7 @@ export default async function Home() {
   return (
     <Shell>
       <main className="max-w-2xl p-6">
-        <h1 className="text-xl font-semibold text-azul">Olá, {eu.nome}</h1>
+        <h1 className="text-xl font-semibold text-azul">{eu.nome}</h1>
         <p className="text-sm text-gray-600">
           {eu.cargo?.descricao} · {avaliacao.data ? `Avaliação ${avaliacao.data.descricao}` : "Nenhuma avaliação aberta"}
         </p>
