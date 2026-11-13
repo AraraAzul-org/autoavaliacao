@@ -4,6 +4,7 @@ import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
 import { ConfirmarGeracao } from "@/components/ConfirmarGeracao";
 import { ConfirmarExclusao } from "@/components/ConfirmarExclusao";
+import { ConfirmarCancelamento } from "@/components/ConfirmarCancelamento";
 import { salvarAvaliacao } from "./actions";
 
 export const instant = false;
@@ -102,8 +103,8 @@ export default async function Avaliacoes({
           <strong>aberta</strong> quando você gera as avaliações dos adultos.
         </p>
         <p className="mt-1 text-xs text-gray-500">
-          Fase de desenvolvimento: qualquer avaliação pode ser excluída, inclusive as abertas e já preenchidas, para
-          corrigir o questionário e gerar de novo.
+          Fase de desenvolvimento: a avaliação pode ser excluída enquanto não tiver nenhuma resposta. Depois disso, use{" "}
+          <strong>Cancelar avaliação</strong> para zerar as respostas e gerar de novo.
         </p>
         {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
         {ok && <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">{ok}</p>}
@@ -132,6 +133,7 @@ export default async function Avaliacoes({
           const st = STATUS[av.status] ?? STATUS.rascunho;
           const total = geradas.get(av.idavaliacao) ?? 0;
           const rascunho = av.status === "rascunho";
+          const totalRespostas = respostas.get(av.idavaliacao) ?? 0;
           return (
             <section key={av.idavaliacao} className="mt-6 overflow-hidden rounded border border-gray-200 bg-white">
               <div className="flex flex-wrap items-center gap-3 border-b-2 border-amarelo bg-azul p-3 text-white">
@@ -149,14 +151,30 @@ export default async function Avaliacoes({
                     </form>
                   </details>
                 )}
-                <div className="rounded bg-white px-2 py-1">
-                  <ConfirmarExclusao
-                    idavaliacao={av.idavaliacao}
-                    descricao={av.descricao}
-                    status={av.status}
-                    participantes={total}
-                    respostas={respostas.get(av.idavaliacao) ?? 0}
-                  />
+                <div className="flex flex-wrap items-center gap-2">
+                  {!rascunho && (
+                    <ConfirmarCancelamento
+                      idavaliacao={av.idavaliacao}
+                      descricao={av.descricao}
+                      status={av.status}
+                      participantes={total}
+                      respostas={totalRespostas}
+                    />
+                  )}
+                  {totalRespostas === 0 ? (
+                    <div className="rounded bg-white px-2 py-1">
+                      <ConfirmarExclusao
+                        idavaliacao={av.idavaliacao}
+                        descricao={av.descricao}
+                        participantes={total}
+                      />
+                    </div>
+                  ) : (
+                    <span className="rounded bg-white px-2 py-1 text-xs text-gray-600">
+                      Excluir indisponível: já tem{" "}
+                      {totalRespostas === 1 ? "1 resposta" : `${totalRespostas} respostas`}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -172,6 +190,9 @@ export default async function Avaliacoes({
                 </span>
                 <span>
                   {total} {total === 1 ? "avaliação gerada" : "avaliações geradas"}
+                </span>
+                <span>
+                  {totalRespostas} {totalRespostas === 1 ? "resposta" : "respostas"}
                 </span>
                 {av.datageracao && (
                   <span>

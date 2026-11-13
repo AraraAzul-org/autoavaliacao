@@ -57,7 +57,29 @@ export async function excluirAvaliacao(f: FormData) {
   if (!id) voltar("erro", "Pedido inválido.");
   const { error } = await supabase.from("avaliacao").delete().eq("idavaliacao", id);
   if (error) voltar("erro", mensagem(error));
-  voltar("ok", "Avaliação excluída, junto com as avaliações individuais e as respostas.");
+  voltar("ok", "Avaliação excluída, junto com as avaliações individuais geradas.");
+}
+
+// Inverso de gerarAvaliacao: apaga as avaliações individuais e as respostas e
+// devolve a avaliação para rascunho, mantendo o cadastro e o questionário.
+export async function cancelarAvaliacao(f: FormData) {
+  const supabase = await exigirDiretor();
+  const id = idDe(f, "idavaliacao");
+  if (!id) voltar("erro", "Pedido inválido.");
+
+  const { data, error } = await supabase.rpc("cancelar_avaliacao", { p_id: id });
+  if (error) voltar("erro", mensagem(error));
+
+  const r = (data ?? {}) as { participantes?: number; respostas?: number };
+  const participantes = Number(r.participantes ?? 0);
+  const respostas = Number(r.respostas ?? 0);
+
+  if (!participantes && !respostas) {
+    voltar("ok", "Avaliação cancelada e de volta a rascunho.");
+  }
+  const avaliacoes = participantes === 1 ? "1 avaliação individual" : `${participantes} avaliações individuais`;
+  const respostasTexto = respostas === 1 ? "1 resposta" : `${respostas} respostas`;
+  voltar("ok", `Avaliação cancelada e de volta a rascunho. ${avaliacoes} e ${respostasTexto} foram removidas.`);
 }
 
 // Abre a avaliação e cria a avaliação de cada adulto ativo do grupo.

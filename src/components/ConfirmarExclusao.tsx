@@ -20,15 +20,11 @@ function Confirmar() {
 export function ConfirmarExclusao({
   idavaliacao,
   descricao,
-  status,
   participantes,
-  respostas,
 }: {
   idavaliacao: number;
   descricao: string;
-  status: string;
   participantes: number;
-  respostas: number;
 }) {
   const [aberto, setAberto] = useState(false);
   const gatilho = useRef<HTMLButtonElement>(null);
@@ -52,8 +48,6 @@ export function ConfirmarExclusao({
     setAberto(false);
     gatilho.current?.focus();
   };
-
-  const preenchida = respostas > 0;
 
   return (
     <>
@@ -97,19 +91,7 @@ export function ConfirmarExclusao({
                     ? "1 avaliação individual será apagada."
                     : `${participantes} avaliações individuais serão apagadas.`}
               </li>
-              <li className="mt-1">
-                {preenchida
-                  ? respostas === 1
-                    ? "1 resposta já registrada será apagada."
-                    : `${respostas} respostas já registradas serão apagadas.`
-                  : "Nenhuma resposta registrada até agora."}
-              </li>
-              {status !== "rascunho" && (
-                <li className="mt-1">
-                  Esta avaliação está <strong>{status === "aberta" ? "aberta" : "finalizada"}</strong> e seria
-                  bloqueada fora da fase de desenvolvimento.
-                </li>
-              )}
+              <li className="mt-1">Nenhuma resposta registrada: a exclusão está liberada.</li>
             </ul>
 
             <form action={excluirAvaliacao} className="mt-4 flex flex-wrap justify-end gap-2">
