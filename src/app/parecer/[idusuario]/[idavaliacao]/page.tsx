@@ -14,6 +14,8 @@ const dataBR = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 const SELOS: Record<string, { rotulo: string; classe: string }> = {
   concluida: { rotulo: "Parecer concluído", classe: "bg-green-100 text-green-800" },
   vencida: { rotulo: "Prazo vencido", classe: "bg-red-100 text-red-800" },
+  aguardando_usuario: { rotulo: "Aguardando o usuário", classe: "bg-gray-100 text-gray-700" },
+  aguardando_apf: { rotulo: "Aguardando o APF", classe: "bg-gray-100 text-gray-700" },
   em_andamento: { rotulo: "Em andamento", classe: "bg-amber-100 text-amber-900" },
   pendente: { rotulo: "Não iniciado", classe: "bg-gray-100 text-gray-700" },
 };
@@ -145,7 +147,15 @@ export default async function ParecerIndividual({
   const concluido = au.concluirdiretor != null;
   const somenteLeitura = concluido || !aberta;
   const vencida = !concluido && av.prazo.slice(0, 10) < hojeSP();
-  const chave = concluido ? "concluida" : vencida ? "vencida" : au.status;
+  const chave = concluido
+    ? "concluida"
+    : vencida
+      ? "vencida"
+      : au.status !== "concluida"
+        ? "aguardando_usuario"
+        : !au.concluiapf
+          ? "aguardando_apf"
+          : "em_andamento";
   const selo = SELOS[chave] ?? SELOS.pendente;
 
   const doDiretor = etapasDiretor.flatMap((e) => e.perguntas);
