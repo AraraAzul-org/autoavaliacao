@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { carregarNotas, chaveNota, formatarNota } from "@/lib/notas";
 
 export const instant = false;
 
@@ -23,7 +24,7 @@ export default async function MeusAssessorados() {
     supabase.from("usuario").select("idusuario, nome, linha").eq("idapf", eu.idusuario).eq("ativo", true).order("nome"),
     supabase
       .from("avaliacao")
-      .select("idavaliacao, descricao")
+      .select("idavaliacao, descricao, idquestionario")
       .eq("status", "aberta")
       .order("prazo", { ascending: false })
       .limit(1)
@@ -40,6 +41,14 @@ export default async function MeusAssessorados() {
       .eq("idavaliacao", avaliacao.data.idavaliacao);
     lista?.forEach((l) => status.set(l.idusuario, l.status));
   }
+
+  const notas = avaliacao.data
+    ? await carregarNotas(
+        supabase,
+        [{ idavaliacao: avaliacao.data.idavaliacao, idquestionario: avaliacao.data.idquestionario }],
+        pessoas.map((p) => p.idusuario),
+      )
+    : new Map();
 
   return (
     <Shell>
@@ -62,22 +71,32 @@ export default async function MeusAssessorados() {
             </p>
           ) : (
             <ul className="divide-y divide-gray-100">
-              {pessoas.map((p) => (
-                <li key={p.idusuario}>
-                  <Link
-                    href={`/meus-assessorados/${p.idusuario}`}
-                    className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 text-sm hover:bg-azul/5"
-                  >
-                    <span className="min-w-0">
-                      <span className="font-medium text-azul underline">{p.nome}</span>{" "}
-                      <span className="text-gray-500">({p.linha})</span>
-                    </span>
-                    <span className="text-gray-600">
-                      {avaliacao.data ? ROTULO[status.get(p.idusuario) ?? "pendente"] : "—"}
-                    </span>
-                  </Link>
-                </li>
-              ))}
+              {pessoas.map((p) => {
+                const situacao = status.get(p.idusuario) ?? "pendente";
+                const nota =
+                  avaliacao.data && situacao === "concluida"
+                    ? notas.get(chaveNota(avaliacao.data.idavaliacao, p.idusuario))
+                    : undefined;
+                return (
+                  <li key={p.idusuario}>
+                    <Link
+                      href={`/meus-assessorados/${p.idusuario}`}
+                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 text-sm hover:bg-azul/5"
+                    >
+                      <span className="min-w-0">
+                        <span className="font-medium text-azul underline">{p.nome}</span>{" "}
+                        <span className="text-gray-500">({p.linha})</span>
+                      </span>
+                      <span className="text-gray-600">
+                        {avaliacao.data ? ROTULO[situacao] : "—"}
+                        {nota && nota.maximo > 0
+                          ? ` · Nota ${formatarNota(nota.total)} de ${formatarNota(nota.maximo)}`
+                          : ""}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

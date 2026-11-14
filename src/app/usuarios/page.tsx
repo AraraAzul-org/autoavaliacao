@@ -40,7 +40,11 @@ export default async function Usuarios({
         <h1 className="text-xl font-semibold text-azul">Cadastro de usuários</h1>
 
         {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
-        {ok && <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">Usuário cadastrado.</p>}
+        {ok && (
+          <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">
+            {ok === "criado" ? "Usuário cadastrado." : "Dados salvos."}
+          </p>
+        )}
 
         <FormUsuario
           action={criarUsuario}

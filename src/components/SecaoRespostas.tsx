@@ -1,3 +1,5 @@
+import { ROTULO_NIVEL, type Nivel } from "@/lib/niveis";
+
 type Opcao = { idpontuacao: number; descricao: string };
 type Pergunta = {
   idpergunta: number;
@@ -8,35 +10,42 @@ type Pergunta = {
 };
 type Etapa = { idetapa: number; descricao: string; perguntas: Pergunta[] };
 
+const seloNivel = (publico: Nivel) =>
+  publico === "apf"
+    ? "bg-amarelo text-gray-900"
+    : publico === "diretor"
+      ? "bg-white text-azul"
+      : "bg-white/90 text-gray-800";
+
 export function SecaoRespostas({
   etapas,
   respostas,
-  titulo,
-  nota,
+  publico,
 }: {
   etapas: Etapa[];
   respostas: Record<number, string>;
-  titulo: string;
-  nota?: string;
+  publico: Nivel;
 }) {
   if (!etapas.length) return null;
 
   return (
-    <section className="mt-6 overflow-hidden rounded border border-gray-200 bg-white">
-      <div className="border-b-2 border-amarelo bg-gray-100 p-3">
-        <h2 className="text-sm font-semibold text-gray-900">{titulo}</h2>
-        {nota && <p className="mt-0.5 text-xs text-gray-600">{nota}</p>}
-      </div>
+    <>
+      {etapas.map((et) => (
+        <section key={et.idetapa} className="mt-6 overflow-hidden rounded border border-gray-200 bg-white">
+          <div className="flex flex-wrap items-center gap-2 border-b-2 border-amarelo bg-azul p-3 text-white">
+            <h2 className="flex-1 text-sm font-semibold">{et.descricao}</h2>
+            <span className={`rounded px-2 py-0.5 text-xs font-medium ${seloNivel(publico)}`}>
+              {ROTULO_NIVEL[publico]}
+            </span>
+            <span className="text-xs text-white/90">Somente leitura</span>
+          </div>
 
-      <div className="p-3">
-        {etapas.map((et) => (
-          <div key={et.idetapa} className="border-b border-gray-100 py-3 last:border-0">
-            <h3 className="mb-2 text-sm font-semibold text-azul">{et.descricao}</h3>
+          <div className="p-3">
             {et.perguntas.map((p) => {
               const valor = respostas[p.idpergunta] ?? "";
               const opcao = p.opcoes.find((o) => String(o.idpontuacao) === valor);
               return (
-                <div key={p.idpergunta} className="py-2">
+                <div key={p.idpergunta} className="border-b border-gray-100 py-3 last:border-0">
                   <p className="text-sm font-medium text-gray-900">
                     <span className="text-azul">{p.codigo}</span> — {p.descricao}
                   </p>
@@ -53,8 +62,8 @@ export function SecaoRespostas({
               );
             })}
           </div>
-        ))}
-      </div>
-    </section>
+        </section>
+      ))}
+    </>
   );
 }

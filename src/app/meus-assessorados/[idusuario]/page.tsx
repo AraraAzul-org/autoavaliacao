@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { Voltar } from "@/components/Voltar";
+import { carregarNotas, chaveNota, formatarNota } from "@/lib/notas";
 
 export const instant = false;
 
@@ -82,6 +83,15 @@ export default async function AvaliacoesDoAssessorado({
     .filter((m): m is Participacao => !!m)
     .filter((m) => m.avaliacao.status === "aberta" || m.avaliacao.status === "finalizada");
 
+  const notas = await carregarNotas(
+    supabase,
+    avaliacoes.map((m) => ({
+      idavaliacao: m.avaliacao.idavaliacao,
+      idquestionario: m.avaliacao.idquestionario,
+    })),
+    [idusuario],
+  );
+
   const questionarios = [...new Set(avaliacoes.map((m) => m.avaliacao.idquestionario))];
 
   const { data: etapas } = questionarios.length
@@ -130,9 +140,7 @@ export default async function AvaliacoesDoAssessorado({
   return (
     <Shell>
       <main className="max-w-3xl p-4">
-        <Link href="/meus-assessorados" className="text-sm text-azul underline">
-          ← Meus assessorados
-        </Link>
+        <Voltar href="/meus-assessorados" />
 
         <h1 className="mt-2 text-xl font-semibold text-azul">{pessoa.nome}</h1>
         <p className="mt-1 text-sm text-gray-600">
@@ -156,6 +164,7 @@ export default async function AvaliacoesDoAssessorado({
           const pctUsuario = total.usuario ? Math.round((feitas.usuario / total.usuario) * 100) : 0;
           const pctApf = total.apf ? Math.round((feitas.apf / total.apf) * 100) : 0;
           const dias = diasAte(av.prazo);
+          const nota = m.status === "concluida" ? notas.get(chaveNota(av.idavaliacao, idusuario)) : undefined;
 
           return (
             <section
@@ -164,7 +173,14 @@ export default async function AvaliacoesDoAssessorado({
             >
               <div className="flex flex-wrap items-start gap-3 border-b border-gray-100 bg-gray-50/60 p-4">
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-semibold text-gray-900">{av.descricao}</h2>
+                  <h2 className="font-semibold text-gray-900">
+                    {av.descricao}
+                    {nota && nota.maximo > 0 && (
+                      <span className="ml-2 whitespace-nowrap rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                        Nota: {formatarNota(nota.total)} de {formatarNota(nota.maximo)}
+                      </span>
+                    )}
+                  </h2>
                   <p className="mt-0.5 text-sm text-gray-600">
                     {m.status === "concluida" && m.dataconclusao
                       ? `Usuário concluiu em ${dataBR(m.dataconclusao)}`

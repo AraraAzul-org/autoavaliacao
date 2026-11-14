@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { Voltar } from "@/components/Voltar";
 import { FormAvaliacao } from "@/components/FormAvaliacao";
 import { SecaoRespostas } from "@/components/SecaoRespostas";
 
@@ -29,7 +29,7 @@ type PerguntaBase = {
   idetapa: number;
   descritiva: boolean;
 };
-type PontuacaoBase = { idpontuacao: number; idpergunta: number; descricao: string; nota: number };
+type PontuacaoBase = { idpontuacao: number; idpergunta: number; descricao: string; nota: number | null };
 
 export default async function ParecerIndividual({
   params,
@@ -174,9 +174,7 @@ export default async function ParecerIndividual({
   return (
     <Shell>
       <main className="max-w-3xl p-4">
-        <Link href="/parecer" className="text-sm text-azul underline">
-          ← Parecer
-        </Link>
+        <Voltar href="/parecer" />
 
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="flex-1 text-xl font-semibold text-azul">{av.descricao}</h1>
@@ -231,18 +229,8 @@ export default async function ParecerIndividual({
               : "Você está vendo as respostas do usuário e do APF e pode registrar o parecer da direção."}
         </p>
 
-        <SecaoRespostas
-          etapas={etapasUsuario}
-          respostas={respostas}
-          titulo="Respostas do usuário"
-          nota="Somente leitura."
-        />
-        <SecaoRespostas
-          etapas={etapasApf}
-          respostas={respostas}
-          titulo="Respostas do APF"
-          nota="Somente leitura."
-        />
+        <SecaoRespostas etapas={etapasUsuario} respostas={respostas} publico="usuario" />
+        <SecaoRespostas etapas={etapasApf} respostas={respostas} publico="apf" />
 
         <FormAvaliacao
           idavaliacao={id}

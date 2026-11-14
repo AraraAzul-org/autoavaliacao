@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { Voltar } from "@/components/Voltar";
 import { FormUsuario } from "@/components/FormUsuario";
 import { atualizarUsuario, redefinirSenha } from "../actions";
 
@@ -38,14 +38,13 @@ export default async function EditarUsuario({
   return (
     <Shell>
       <main className="max-w-4xl p-4">
-        <Link href="/usuarios" className="text-sm text-azul underline">← Voltar para usuários</Link>
+        <Voltar href="/usuarios" />
         <h1 className="mt-2 text-xl font-semibold text-azul">Editar usuário</h1>
         {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
         {ok && <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">{ok}</p>}
         <FormUsuario
           action={atualizarUsuario.bind(null, id)}
           botao="Salvar alterações"
-          emailTravado={temAcesso}
           valores={alvo.data}
           ramos={(r.data ?? []).map((x) => ({ id: x.idramo, rotulo: x.nome }))}
           cargos={(c.data ?? []).map((x) => ({ id: x.idcargo, rotulo: x.descricao }))}

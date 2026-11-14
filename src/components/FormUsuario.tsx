@@ -32,7 +32,6 @@ export function FormUsuario(props: {
   situacoes: Opcao[];
   apfs: Opcao[];
   valores?: ValoresUsuario;
-  emailTravado?: boolean;
   botao: string;
   pedirSenha?: boolean;
 }) {
@@ -43,9 +42,8 @@ export function FormUsuario(props: {
         <input name="nome" required defaultValue={v.nome ?? ""} className={campo} />
       </label>
       <label className="text-sm">E-mail *
-        <input name="email" type="email" required defaultValue={v.email ?? ""} readOnly={props.emailTravado}
-          className={`${campo} ${props.emailTravado ? "bg-gray-100 text-gray-500" : ""}`} />
-        {props.emailTravado && <span className="text-xs text-gray-500">Já vinculado a um login; não pode ser alterado.</span>}
+        <input name="email" type="email" required defaultValue={v.email ?? ""} className={campo} />
+        <span className="text-xs text-gray-500">O login do usuário usa este e-mail; ao alterar, o acesso também muda.</span>
       </label>
       <label className="text-sm">Linha de atuação *
         <select name="linha" required defaultValue={v.linha ?? ""} className={campo}>

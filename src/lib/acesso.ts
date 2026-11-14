@@ -6,7 +6,10 @@ type Resposta = { ok: boolean; erro?: string };
 // A chave de serviço fica só dentro do Supabase; este app nunca a recebe.
 export async function gerirAcesso(
   supabase: SupabaseClient,
-  corpo: { acao: "definir_senha"; idusuario: number; senha: string } | { acao: "limpar_troca" }
+  corpo:
+    | { acao: "definir_senha"; idusuario: number; senha: string }
+    | { acao: "alterar_email"; idusuario: number; email: string }
+    | { acao: "limpar_troca" }
 ): Promise<Resposta> {
   const { data, error } = await supabase.functions.invoke("gerir-acesso", { body: corpo });
   if (error || !data) return { ok: false, erro: "Não foi possível falar com o serviço de acesso." };

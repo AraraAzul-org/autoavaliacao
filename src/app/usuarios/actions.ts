@@ -55,7 +55,7 @@ export async function criarUsuario(formData: FormData) {
   }
 
   revalidatePath("/usuarios");
-  redirect("/usuarios?ok=1");
+  redirect("/usuarios?ok=criado");
 }
 
 export async function atualizarUsuario(id: number, formData: FormData) {
@@ -75,16 +75,21 @@ export async function atualizarUsuario(id: number, formData: FormData) {
 
   const { data: atual } = await supabase.from("usuario").select("email, auth_user_id").eq("idusuario", id).maybeSingle();
   if (!atual) volta("Usuário não encontrado.");
-  const email = atual?.auth_user_id ? atual.email : d.email;
+
+  const emailAntigo = String(atual.email ?? "").trim().toLowerCase();
+  if (d.email !== emailAntigo && atual.auth_user_id) {
+    const acesso = await gerirAcesso(supabase, { acao: "alterar_email", idusuario: id, email: d.email });
+    if (!acesso.ok) volta(acesso.erro ?? "Não foi possível alterar o e-mail de acesso.");
+  }
 
   const { data, error } = await supabase
     .from("usuario")
-    .update({ ...d, email })
+    .update(d)
     .eq("idusuario", id)
     .select("idusuario");
   if (error || !data?.length) volta(msgErro(error?.code));
   revalidatePath("/usuarios");
-  redirect("/usuarios?ok=1");
+  redirect("/usuarios?ok=salvo");
 }
 
 export async function redefinirSenha(id: number, formData: FormData) {

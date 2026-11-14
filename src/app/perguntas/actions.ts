@@ -79,25 +79,31 @@ export async function salvarPergunta(f: FormData) {
   const supabase = await exigirDiretor();
   const id = idDe(f, "idpergunta");
   const q = texto(f, "q") || null;
+  const tipo = texto(f, "tipo") || "pontuada";
+  if (!["pontuada", "selecao", "descritiva"].includes(tipo))
+    voltar("erro", "Escolha o tipo de resposta da pergunta.", id ? String(id) : null, q);
   const dados = {
     codigo: texto(f, "codigo"),
     descricao: texto(f, "descricao"),
     idetapa: idDe(f, "idetapa"),
-    descritiva: f.get("descritiva") === "on",
+    descritiva: tipo === "descritiva",
+    selecao: tipo === "selecao",
   };
   if (!dados.codigo || !dados.descricao || !dados.idetapa) voltar("erro", "Informe código, descrição e etapa.", null, q);
 
   if (id) {
-    const { data: atual } = await supabase.from("pergunta").select("descritiva").eq("idpergunta", id).maybeSingle();
-    if (atual && atual.descritiva !== dados.descritiva) {
+    const { data: atual } = await supabase
+      .from("pergunta")
+      .select("descritiva, selecao")
+      .eq("idpergunta", id)
+      .maybeSingle();
+    if (atual && (atual.descritiva !== dados.descritiva || atual.selecao !== dados.selecao)) {
       const { count: respostas } = await supabase
         .from("resposta").select("idresposta", { count: "exact", head: true }).eq("idpergunta", id);
       if (respostas) voltar("erro", "Esta pergunta já tem respostas; não é possível mudar o tipo.", String(id), q);
-      if (dados.descritiva) {
-        const { count: opcoes } = await supabase
-          .from("pontuacao").select("idpontuacao", { count: "exact", head: true }).eq("idpergunta", id);
-        if (opcoes) voltar("erro", "Exclua as pontuações antes de tornar a pergunta descritiva.", String(id), q);
-      }
+      const { count: opcoes } = await supabase
+        .from("pontuacao").select("idpontuacao", { count: "exact", head: true }).eq("idpergunta", id);
+      if (opcoes) voltar("erro", "Exclua as opções de resposta antes de mudar o tipo.", String(id), q);
     }
   }
 
@@ -113,12 +119,20 @@ export async function salvarPontuacao(f: FormData) {
   const id = idDe(f, "idpontuacao");
   const idpergunta = idDe(f, "idpergunta");
   const q = texto(f, "q") || null;
-  const nota = Number(texto(f, "nota").replace(",", "."));
   const descricao = texto(f, "descricao");
-  if (!idpergunta || !descricao || texto(f, "nota") === "" || Number.isNaN(nota))
-    voltar("erro", "Informe a descrição e uma nota numérica.", String(idpergunta), q);
-  const { data: pergunta } = await supabase.from("pergunta").select("descritiva").eq("idpergunta", idpergunta).maybeSingle();
+  const { data: pergunta } = await supabase
+    .from("pergunta")
+    .select("descritiva, selecao")
+    .eq("idpergunta", idpergunta ?? 0)
+    .maybeSingle();
   if (pergunta?.descritiva) voltar("erro", "Pergunta descritiva não tem pontuações.", String(idpergunta), q);
+
+  const selecao = !!pergunta?.selecao;
+  const notaTexto = texto(f, "nota");
+  const nota = selecao ? null : Number(notaTexto.replace(",", "."));
+  if (!idpergunta || !descricao || (!selecao && (notaTexto === "" || Number.isNaN(nota))))
+    voltar("erro", selecao ? "Informe a descrição da opção." : "Informe a descrição e uma nota numérica.", String(idpergunta), q);
+
   const { error } = id
     ? await supabase.from("pontuacao").update({ descricao, nota }).eq("idpontuacao", id)
     : await supabase.from("pontuacao").insert({ idpergunta, descricao, nota });

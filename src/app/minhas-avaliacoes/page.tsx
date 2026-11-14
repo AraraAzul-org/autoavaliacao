@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { carregarNotas, chaveNota, formatarNota } from "@/lib/notas";
 
 export const instant = false;
 
@@ -60,6 +61,15 @@ export default async function MinhasAvaliacoes() {
     })
     .filter((m): m is Minha & { avaliacao: Avaliacao } => !!m)
     .filter((m) => m.avaliacao.status === "aberta" || m.avaliacao.status === "finalizada");
+
+  const notas = await carregarNotas(
+    supabase,
+    minhas.map((m) => ({
+      idavaliacao: m.avaliacao.idavaliacao,
+      idquestionario: m.avaliacao.idquestionario,
+    })),
+    [eu.idusuario],
+  );
 
   const questionarios = [...new Set(minhas.map((m) => m.avaliacao.idquestionario))];
 
@@ -124,6 +134,7 @@ export default async function MinhasAvaliacoes() {
           const selo = SELOS[chave] ?? SELOS.pendente;
           const pct = total ? Math.round((feitas / total) * 100) : 0;
           const dias = diasAte(av.prazo);
+          const nota = m.status === "concluida" ? notas.get(chaveNota(av.idavaliacao, eu.idusuario)) : undefined;
 
           return (
             <section
@@ -132,7 +143,14 @@ export default async function MinhasAvaliacoes() {
             >
               <div className="flex flex-wrap items-start gap-3 border-b border-gray-100 bg-gray-50/60 p-4">
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-semibold text-gray-900">{av.descricao}</h2>
+                  <h2 className="font-semibold text-gray-900">
+                    {av.descricao}
+                    {nota && nota.maximo > 0 && (
+                      <span className="ml-2 whitespace-nowrap rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                        Nota: {formatarNota(nota.total)} de {formatarNota(nota.maximo)}
+                      </span>
+                    )}
+                  </h2>
                   <p className="mt-0.5 text-sm text-gray-600">
                     {m.status === "concluida" && m.dataconclusao
                       ? `Concluída em ${dataBR(m.dataconclusao)}`

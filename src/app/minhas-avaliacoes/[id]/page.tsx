@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { Voltar } from "@/components/Voltar";
 import { FormAvaliacao } from "@/components/FormAvaliacao";
+import { carregarNotas, chaveNota, formatarNota } from "@/lib/notas";
 
 export const instant = false;
 
@@ -67,7 +68,7 @@ export default async function ResponderAvaliacao({
         .select("idpontuacao, idpergunta, descricao, nota")
         .in("idpergunta", idsPerguntas)
         .order("nota")
-    : { data: [] as { idpontuacao: number; idpergunta: number; descricao: string; nota: number }[] };
+    : { data: [] as { idpontuacao: number; idpergunta: number; descricao: string; nota: number | null }[] };
   const pontuacoes = pontuacoesData ?? [];
 
   const { data: respostasData } = await supabase
@@ -85,14 +86,26 @@ export default async function ResponderAvaliacao({
   const feitas = perguntas.filter((p) => respostaDa.has(p.idpergunta)).length;
   const pct = total ? Math.round((feitas / total) * 100) : 0;
 
+  const notas = await carregarNotas(
+    supabase,
+    [{ idavaliacao: id, idquestionario: av.idquestionario }],
+    [eu.idusuario],
+  );
+  const nota = concluida ? notas.get(chaveNota(id, eu.idusuario)) : undefined;
+
   return (
     <Shell>
       <main className="max-w-3xl p-4">
-        <Link href="/minhas-avaliacoes" className="text-sm text-azul underline">
-          ← Minhas avaliações
-        </Link>
+        <Voltar href="/minhas-avaliacoes" />
 
-        <h1 className="mt-2 text-xl font-semibold text-azul">{av.descricao}</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-semibold text-azul">{av.descricao}</h1>
+          {nota && nota.maximo > 0 && (
+            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+              Nota: {formatarNota(nota.total)} de {formatarNota(nota.maximo)}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-gray-600">
           Prazo: <strong>{dataBR(av.prazo)}</strong>
           {concluida && au.dataconclusao ? ` · concluída em ${dataBR(au.dataconclusao)}` : ""}

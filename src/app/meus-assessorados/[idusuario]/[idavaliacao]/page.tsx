@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { Voltar } from "@/components/Voltar";
 import { FormAvaliacao } from "@/components/FormAvaliacao";
 import { SecaoRespostas } from "@/components/SecaoRespostas";
+import { carregarNotas, chaveNota, formatarNota } from "@/lib/notas";
 
 export const instant = false;
 
@@ -28,7 +29,7 @@ type PerguntaBase = {
   idetapa: number;
   descritiva: boolean;
 };
-type PontuacaoBase = { idpontuacao: number; idpergunta: number; descricao: string; nota: number };
+type PontuacaoBase = { idpontuacao: number; idpergunta: number; descricao: string; nota: number | null };
 
 export default async function RespostasDoAssessorado({
   params,
@@ -154,6 +155,13 @@ export default async function RespostasDoAssessorado({
   const feitas = doApf.filter((p) => respostaDa.has(p.idpergunta)).length;
   const pct = total ? Math.round((feitas / total) * 100) : 0;
 
+  const notas = await carregarNotas(
+    supabase,
+    [{ idavaliacao: id, idquestionario: av.idquestionario }],
+    [idusuario],
+  );
+  const nota = au.status === "concluida" ? notas.get(chaveNota(id, idusuario)) : undefined;
+
   const bloqueioConclusao =
     !somenteLeitura && au.status !== "concluida"
       ? "O usuário ainda não concluiu a avaliação. O APF só pode concluir depois do usuário."
@@ -162,12 +170,15 @@ export default async function RespostasDoAssessorado({
   return (
     <Shell>
       <main className="max-w-3xl p-4">
-        <Link href={`/meus-assessorados/${idusuario}`} className="text-sm text-azul underline">
-          ← {pessoa.nome}
-        </Link>
+        <Voltar href={`/meus-assessorados/${idusuario}`} />
 
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="flex-1 text-xl font-semibold text-azul">{av.descricao}</h1>
+          {nota && nota.maximo > 0 && (
+            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+              Nota do usuário: {formatarNota(nota.total)} de {formatarNota(nota.maximo)}
+            </span>
+          )}
           <span className={`rounded px-2 py-0.5 text-xs font-medium ${selo.classe}`}>{selo.rotulo}</span>
         </div>
         <p className="mt-1 text-sm text-gray-600">
@@ -199,12 +210,7 @@ export default async function RespostasDoAssessorado({
               : "Você está vendo as respostas do usuário e pode responder as perguntas do APF."}
         </p>
 
-        <SecaoRespostas
-          etapas={etapasUsuario}
-          respostas={respostas}
-          titulo="Respostas do usuário"
-          nota="Somente leitura."
-        />
+        <SecaoRespostas etapas={etapasUsuario} respostas={respostas} publico="usuario" />
 
         {!etapasApf.length && (
           <p className="mt-6 text-sm text-gray-600">Este questionário não tem perguntas para o APF.</p>
