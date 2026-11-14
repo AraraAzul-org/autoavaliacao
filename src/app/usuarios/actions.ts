@@ -74,10 +74,11 @@ export async function atualizarUsuario(id: number, formData: FormData) {
   }
 
   const { data: atual } = await supabase.from("usuario").select("email, auth_user_id").eq("idusuario", id).maybeSingle();
+  const emailAntigo = String(atual?.email ?? "").trim().toLowerCase();
+  const temAcesso = !!atual?.auth_user_id;
   if (!atual) volta("Usuário não encontrado.");
 
-  const emailAntigo = String(atual.email ?? "").trim().toLowerCase();
-  if (d.email !== emailAntigo && atual.auth_user_id) {
+  if (d.email !== emailAntigo && temAcesso) {
     const acesso = await gerirAcesso(supabase, { acao: "alterar_email", idusuario: id, email: d.email });
     if (!acesso.ok) volta(acesso.erro ?? "Não foi possível alterar o e-mail de acesso.");
   }
