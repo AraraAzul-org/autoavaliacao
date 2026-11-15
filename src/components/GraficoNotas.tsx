@@ -13,10 +13,7 @@ export function GraficoNotas({ linhas }: { linhas: LinhaGrafico[] }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-gray-500">
-        <span>Escala de 0 a {formatarNota(maximo)}</span>
-        <span>{linhas.length} {linhas.length === 1 ? "usuário" : "usuários"}</span>
-      </div>
+      <p className="text-xs text-gray-500">Escala de 0 a {formatarNota(maximo)}</p>
 
       <div className="mt-3 space-y-4">
         {linhas.map((l) => {
