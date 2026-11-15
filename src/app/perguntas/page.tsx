@@ -34,26 +34,14 @@ function Excluir({ tabela, id, abrir, q }: { tabela: string; id: number; abrir?:
   );
 }
 
-function TipoResposta({
-  descritiva = false,
-  selecao = false,
-  nome = "tipo",
-}: {
-  descritiva?: boolean;
-  selecao?: boolean;
-  nome?: string;
-}) {
+function TipoResposta({ descritiva = false, nome = "tipo" }: { descritiva?: boolean; nome?: string }) {
   return (
     <fieldset className="sm:col-span-3">
       <legend className="text-sm text-gray-600">Tipo de resposta</legend>
       <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm">
         <label className="flex items-center gap-2">
-          <input type="radio" name={nome} value="pontuada" defaultChecked={!descritiva && !selecao} />
+          <input type="radio" name={nome} value="pontuada" defaultChecked={!descritiva} />
           Pontuada (nota em cada opção)
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="radio" name={nome} value="selecao" defaultChecked={selecao} />
-          Seleção (opções sem nota)
         </label>
         <label className="flex items-center gap-2">
           <input type="radio" name={nome} value="descritiva" defaultChecked={descritiva} />
@@ -310,7 +298,7 @@ export default async function Perguntas({
                         </span>
                       ) : pe.selecao ? (
                         <span className="ml-2 rounded bg-azul/10 px-1.5 py-0.5 text-xs text-azul">
-                          Seleção
+                          Seleção (legado)
                         </span>
                       ) : (
                         <span className="text-gray-500"> ({opcoes.length} pontuações)</span>
@@ -324,7 +312,16 @@ export default async function Perguntas({
                       <input name="codigo" required defaultValue={pe.codigo} className={campo} />
                       <input name="descricao" required defaultValue={pe.descricao} className={campo} />
                       <button className={btn}>Salvar pergunta</button>
-                      <TipoResposta descritiva={pe.descritiva} selecao={pe.selecao} />
+                      {pe.selecao ? (
+                        <>
+                          <input type="hidden" name="tipo" value="selecao" />
+                          <p className="text-xs text-gray-500 sm:col-span-3">
+                            Tipo de resposta: seleção (tipo antigo, não disponível para novas perguntas).
+                          </p>
+                        </>
+                      ) : (
+                        <TipoResposta descritiva={pe.descritiva} />
+                      )}
                     </form>
 
                     {pe.descritiva ? (
@@ -335,7 +332,7 @@ export default async function Perguntas({
                       <>
                         {pe.selecao && (
                           <p className="mt-3 rounded bg-azul/5 p-2 text-sm text-gray-600">
-                            Pergunta de seleção: as opções de resposta não têm nota.
+                            Pergunta de seleção (tipo antigo): as opções de resposta não têm nota.
                           </p>
                         )}
 

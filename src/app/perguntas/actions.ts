@@ -82,6 +82,8 @@ export async function salvarPergunta(f: FormData) {
   const tipo = texto(f, "tipo") || "pontuada";
   if (!["pontuada", "selecao", "descritiva"].includes(tipo))
     voltar("erro", "Escolha o tipo de resposta da pergunta.", id ? String(id) : null, q);
+  // "Seleção" saiu do cadastro; o valor só é aceito para não converter perguntas antigas desse tipo.
+  if (tipo === "selecao" && !id) voltar("erro", "Escolha o tipo de resposta da pergunta.", null, q);
   const dados = {
     codigo: texto(f, "codigo"),
     descricao: texto(f, "descricao"),
