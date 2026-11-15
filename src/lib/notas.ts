@@ -18,7 +18,7 @@ type Pergunta = { idpergunta: number; idetapa: number; descritiva: boolean; sele
 type Pontuacao = { idpontuacao: number; idpergunta: number; nota: number | string | null };
 
 // Soma as notas das opções escolhidas nas perguntas de nível Usuário.
-// Perguntas descritivas e de seleção não têm nota e ficam de fora.
+// Perguntas descritivas, de seleção e opções sem nota ficam de fora.
 export async function carregarNotas(
   supabase: SupabaseClient,
   avaliacoes: Avaliacao[],

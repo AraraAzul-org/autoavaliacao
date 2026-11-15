@@ -361,12 +361,11 @@ export default async function Perguntas({
                                 {!pe.selecao && (
                                   <input
                                     name="nota"
-                                    required={o.nota != null}
                                     defaultValue={o.nota == null ? "" : String(o.nota)}
                                     placeholder="Sem nota"
                                     inputMode="decimal"
                                     className={`${campo} w-24`}
-                                    aria-label="Nota"
+                                    aria-label="Nota (opcional)"
                                   />
                                 )}
                                 <button className={btn}>Salvar</button>
@@ -391,7 +390,12 @@ export default async function Perguntas({
                             className={`${campo} min-w-48 flex-1`}
                           />
                           {!pe.selecao && (
-                            <input name="nota" required placeholder="Nota" inputMode="decimal" className={`${campo} w-20`} />
+                            <input
+                              name="nota"
+                              placeholder="Nota (opcional)"
+                              inputMode="decimal"
+                              className={`${campo} w-28`}
+                            />
                           )}
                           <button className={btn}>Adicionar pontuação</button>
                         </form>

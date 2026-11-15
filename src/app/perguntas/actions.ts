@@ -134,21 +134,10 @@ export async function salvarPontuacao(f: FormData) {
   let nota: number | null = null;
   if (!selecao && notaTexto !== "") {
     const numero = Number(notaTexto.replace(",", "."));
-    if (Number.isNaN(numero)) voltar("erro", "Informe a descrição e uma nota numérica.", String(idpergunta), q);
+    if (Number.isNaN(numero)) voltar("erro", "A nota deve ser numérica.", String(idpergunta), q);
     nota = numero;
   }
   if (!idpergunta || !descricao) voltar("erro", "Informe a descrição da opção.", String(idpergunta), q);
-  if (!selecao && notaTexto === "") {
-    // Opções já cadastradas sem nota continuam sem nota ao serem editadas.
-    if (!id) voltar("erro", "Informe a descrição e uma nota numérica.", String(idpergunta), q);
-    const { data: atual } = await supabase
-      .from("pontuacao")
-      .select("nota")
-      .eq("idpontuacao", id)
-      .maybeSingle();
-    if (atual?.nota != null)
-      voltar("erro", "Informe a descrição e uma nota numérica.", String(idpergunta), q);
-  }
 
   const { error } = id
     ? await supabase.from("pontuacao").update({ descricao, nota }).eq("idpontuacao", id)
