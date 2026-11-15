@@ -2,16 +2,17 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarSessao } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
+import { GraficoDistribuicao, type ItemDistribuicao } from "@/components/GraficoDistribuicao";
+import { tempoDesde } from "@/lib/tempo";
 
 export const instant = false;
 
-type Pessoa = { idusuario: number; nome: string; linha: string };
+const SEM_SITUACAO = "Sem situação";
 
-const ROTULO: Record<string, string> = {
-  pendente: "Não preenchida",
-  em_andamento: "Em andamento",
-  concluida: "Preenchida",
-};
+const dataBR = (iso: string | null) => (iso ? iso.slice(0, 10).split("-").reverse().join("/") : "—");
+
+type PessoaBruta = { idusuario: number; nome: string; idsituacao: number | null; datasituacao: string | null };
+type Pessoa = { idusuario: number; nome: string; situacao: string; datasituacao: string | null };
 
 export default async function Home() {
   const supabase = await createClient();
@@ -30,16 +31,13 @@ export default async function Home() {
     );
   }
 
-  const [grupo, avaliacao] = await Promise.all([
-    eu.diretor
-      ? supabase
-          .from("usuario")
-          .select("idusuario, nome, linha")
-          .eq("membrogrupo", true)
-          .eq("ativo", true)
-          .neq("idusuario", eu.idusuario)
-          .order("nome")
-      : Promise.resolve({ data: [] as Pessoa[] }),
+  const [pessoasBrutas, situacoes, avaliacao] = await Promise.all([
+    eu.podeResultados
+      ? supabase.from("usuario").select("idusuario, nome, idsituacao, datasituacao").eq("ativo", true)
+      : Promise.resolve({ data: [] as PessoaBruta[] }),
+    eu.podeResultados
+      ? supabase.from("situacao").select("idsituacao, situacao")
+      : Promise.resolve({ data: [] as { idsituacao: number; situacao: string }[] }),
     supabase
       .from("avaliacao")
       .select("idavaliacao, descricao")
@@ -49,38 +47,31 @@ export default async function Home() {
       .maybeSingle(),
   ]);
 
-  const status = new Map<number, string>();
-  if (avaliacao.data) {
-    const { data: lista } = await supabase
-      .from("avaliacaousuario")
-      .select("idusuario, status")
-      .eq("idavaliacao", avaliacao.data.idavaliacao);
-    lista?.forEach((l) => status.set(l.idusuario, l.status));
-  }
+  const nomeSituacao = new Map((situacoes.data ?? []).map((s) => [s.idsituacao, s.situacao]));
 
-  const Lista = ({ titulo, pessoas }: { titulo: string; pessoas: Pessoa[] | null }) => (
-    <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm">
-      <h2 className="border-b border-gray-100 bg-gray-50/60 px-4 py-2.5 text-sm font-semibold text-gray-800">
-        {titulo}
-      </h2>
-      {!pessoas?.length ? (
-        <p className="px-4 py-4 text-sm text-gray-600">Nenhum adulto para exibir.</p>
-      ) : (
-        <ul className="divide-y divide-gray-100">
-          {pessoas.map((p) => (
-            <li key={p.idusuario} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 text-sm">
-              <span className="min-w-0">
-                {p.nome} <span className="text-gray-500">({p.linha})</span>
-              </span>
-              <span className="text-gray-600">
-                {avaliacao.data ? ROTULO[status.get(p.idusuario) ?? "pendente"] : "—"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
+  const pessoas: Pessoa[] = ((pessoasBrutas.data ?? []) as PessoaBruta[])
+    .map((p) => ({
+      idusuario: p.idusuario,
+      nome: p.nome,
+      situacao: (p.idsituacao != null ? nomeSituacao.get(p.idsituacao) : "") ?? "",
+      datasituacao: p.datasituacao,
+    }))
+    .sort(
+      (a, b) =>
+        (a.situacao || "\uffff").localeCompare(b.situacao || "\uffff", "pt-BR", { sensitivity: "base" }) ||
+        a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
+    );
+
+  const contagem = new Map<string, number>();
+  pessoas.forEach((p) => contagem.set(p.situacao, (contagem.get(p.situacao) ?? 0) + 1));
+  const itens: ItemDistribuicao[] = [...contagem.entries()]
+    .map(([rotulo, quantidade]) => ({ rotulo: rotulo || SEM_SITUACAO, quantidade }))
+    .sort(
+      (a, b) =>
+        b.quantidade - a.quantidade ||
+        (a.rotulo === SEM_SITUACAO ? 1 : b.rotulo === SEM_SITUACAO ? -1 : 0) ||
+        a.rotulo.localeCompare(b.rotulo, "pt-BR", { sensitivity: "base" }),
+    );
 
   return (
     <Shell>
@@ -89,7 +80,61 @@ export default async function Home() {
         <p className="text-sm text-gray-600">
           {eu.cargo?.descricao} · {avaliacao.data ? `Avaliação ${avaliacao.data.descricao}` : "Nenhuma avaliação aberta"}
         </p>
-        {eu.diretor && <Lista titulo="Adultos do grupo" pessoas={grupo.data} />}
+
+        {eu.podeResultados && (
+          <>
+            <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="flex flex-wrap items-center gap-2 border-b-2 border-amarelo bg-azul p-3 text-white">
+                <h2 className="flex-1 text-sm font-semibold">Usuários por situação</h2>
+                <span className="rounded bg-white/90 px-2 py-0.5 text-xs font-medium text-gray-800">
+                  {pessoas.length} {pessoas.length === 1 ? "usuário" : "usuários"}
+                </span>
+              </div>
+              <div className="p-4">
+                {!itens.length ? (
+                  <p className="text-sm text-gray-600">Nenhum usuário cadastrado.</p>
+                ) : (
+                  <GraficoDistribuicao itens={itens} />
+                )}
+              </div>
+            </section>
+
+            <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm">
+              <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2.5">
+                <h2 className="flex-1 text-sm font-semibold text-gray-800">Usuários e situação</h2>
+                <span className="text-xs text-gray-500">Ordenado por situação e nome</span>
+              </div>
+              {!pessoas.length ? (
+                <p className="px-4 py-4 text-sm text-gray-600">Nenhum usuário cadastrado.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                        <th className="px-4 py-2 font-medium">Situação</th>
+                        <th className="px-4 py-2 font-medium">Usuário</th>
+                        <th className="px-4 py-2 font-medium">Data</th>
+                        <th className="px-4 py-2 text-right font-medium">Tempo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {pessoas.map((p) => (
+                        <tr key={p.idusuario}>
+                          <td className="px-4 py-2 text-gray-700">{p.situacao || SEM_SITUACAO}</td>
+                          <td className="px-4 py-2 font-medium text-gray-900">{p.nome}</td>
+                          <td className="whitespace-nowrap px-4 py-2 text-gray-600">{dataBR(p.datasituacao)}</td>
+                          <td className="whitespace-nowrap px-4 py-2 text-right text-gray-700">
+                            {tempoDesde(p.datasituacao)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </>
+        )}
       </main>
     </Shell>
   );
