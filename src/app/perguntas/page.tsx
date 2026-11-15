@@ -287,7 +287,7 @@ export default async function Perguntas({
               .filter((x) => x.idetapa === et.idetapa)
               .map((pe) => {
                 const opcoes = pontuacoes.filter((x) => x.idpergunta === pe.idpergunta);
-                const semNota = pe.selecao;
+                const semNota = pe.selecao || (opcoes.length > 0 && opcoes.every((o) => o.nota == null));
                 return (
                   <details key={pe.idpergunta} open={abrir === String(pe.idpergunta)} className="border-b p-3">
                     <summary className="cursor-pointer text-sm">
@@ -301,7 +301,10 @@ export default async function Perguntas({
                           Seleção (legado)
                         </span>
                       ) : (
-                        <span className="text-gray-500"> ({opcoes.length} pontuações)</span>
+                        <span className="text-gray-500">
+                          {" "}
+                          ({opcoes.length} {semNota ? "opções sem nota" : "pontuações"})
+                        </span>
                       )}
                     </summary>
 
@@ -330,10 +333,16 @@ export default async function Perguntas({
                       </p>
                     ) : (
                       <>
-                        {pe.selecao && (
+                        {pe.selecao ? (
                           <p className="mt-3 rounded bg-azul/5 p-2 text-sm text-gray-600">
                             Pergunta de seleção (tipo antigo): as opções de resposta não têm nota.
                           </p>
+                        ) : (
+                          semNota && (
+                            <p className="mt-3 rounded bg-azul/5 p-2 text-sm text-gray-600">
+                              Pergunta sem pontuação: as opções não têm nota e não entram no total.
+                            </p>
+                          )
                         )}
 
                         <ul className="mt-3 space-y-2">
@@ -349,13 +358,14 @@ export default async function Perguntas({
                                   defaultValue={o.descricao}
                                   className={`${campo} min-w-48 flex-1`}
                                 />
-                                {!semNota && (
+                                {!pe.selecao && (
                                   <input
                                     name="nota"
-                                    required
+                                    required={o.nota != null}
                                     defaultValue={o.nota == null ? "" : String(o.nota)}
+                                    placeholder="Sem nota"
                                     inputMode="decimal"
-                                    className={`${campo} w-20`}
+                                    className={`${campo} w-24`}
                                     aria-label="Nota"
                                   />
                                 )}
@@ -377,13 +387,13 @@ export default async function Perguntas({
                           <input
                             name="descricao"
                             required
-                            placeholder={semNota ? "Nova opção de resposta" : "Nova pontuação (texto da resposta)"}
+                            placeholder="Nova pontuação (texto da resposta)"
                             className={`${campo} min-w-48 flex-1`}
                           />
-                          {!semNota && (
+                          {!pe.selecao && (
                             <input name="nota" required placeholder="Nota" inputMode="decimal" className={`${campo} w-20`} />
                           )}
-                          <button className={btn}>{semNota ? "Adicionar opção" : "Adicionar pontuação"}</button>
+                          <button className={btn}>Adicionar pontuação</button>
                         </form>
                       </>
                     )}
