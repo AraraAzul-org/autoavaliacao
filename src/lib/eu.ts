@@ -25,6 +25,8 @@ export async function carregarSessao(supabase: SupabaseClient) {
       diretor: !!cargo?.avalia,
       // O menu Parecer é só para quem avalia e é dirigente.
       podeParecer: !!cargo?.avalia && linha === "Dirigente",
+      // A tela de resultados segue a mesma regra: avalia e é dirigente.
+      podeResultados: !!cargo?.avalia && linha === "Dirigente",
     },
   };
 }

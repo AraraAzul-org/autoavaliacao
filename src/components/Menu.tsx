@@ -6,5 +6,11 @@ import { MenuItens } from "@/components/MenuItens";
 export async function Menu() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  return <MenuItens diretor={!!eu?.diretor} parecer={!!eu?.podeParecer} />;
+  return (
+    <MenuItens
+      diretor={!!eu?.diretor}
+      parecer={!!eu?.podeParecer}
+      resultados={!!eu?.podeResultados}
+    />
+  );
 }
