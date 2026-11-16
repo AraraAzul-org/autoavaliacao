@@ -17,9 +17,9 @@ export const CADASTROS: Record<string, ConfigCadastro> = {
   },
   cargo: {
     chave: "idcargo",
-    rota: "/cargos",
-    titulo: "Cargos",
-    ajuda: "Cargos que avaliam (diretores) podem ver e avaliar todos os adultos do grupo.",
+    rota: "/funcoes",
+    titulo: "Funções",
+    ajuda: "Funções do adulto no grupo. Funções que avaliam (diretores) podem ver e avaliar todos os adultos do grupo.",
     campos: [
       { nome: "descricao", rotulo: "Descrição", tipo: "texto" },
       { nome: "avalia", rotulo: "Avalia (diretor)", tipo: "bool" },

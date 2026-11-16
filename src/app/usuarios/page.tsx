@@ -28,7 +28,7 @@ export default async function Usuarios({
 
   const { erro, ok } = await searchParams;
   const [u, r, c, s] = await Promise.all([
-    supabase.from("usuario").select("idusuario, nome, email, linha, idramo, idcargo, idsituacao, idapf, membrogrupo, ativo, datainativacao, idusuarioinativacao").order("nome"),
+    supabase.from("usuario").select("idusuario, nome, email, registro, linha, idramo, idcargo, idsituacao, idapf, membrogrupo, ativo, datainativacao, idusuarioinativacao").order("nome"),
     supabase.from("ramo").select("idramo, nome").order("nome"),
     supabase.from("cargo").select("idcargo, descricao").order("descricao"),
     supabase.from("situacao").select("idsituacao, situacao").order("idsituacao"),
@@ -68,7 +68,7 @@ export default async function Usuarios({
           <table className="w-full text-left text-sm">
             <thead className="bg-azul text-white">
               <tr>
-                {["Nome", "Linha", "Ramo", "Cargo", "Situação", "APF", "Grupo", "Status", ""].map((h) => (
+                {["Nome", "Registro", "Linha", "Ramo", "Função", "Situação", "APF", "Grupo", "Status", ""].map((h) => (
                   <th key={h} className="p-2 font-medium">{h}</th>
                 ))}
               </tr>
@@ -77,6 +77,7 @@ export default async function Usuarios({
               {usuarios.map((x) => (
                 <tr key={x.idusuario}>
                   <td className="p-2">{x.nome}<div className="text-xs text-gray-500">{x.email}</div></td>
+                  <td className="whitespace-nowrap p-2">{x.registro ?? "—"}</td>
                   <td className="p-2">{x.linha}</td>
                   <td className="p-2">{nomeRamo.get(x.idramo) ?? "—"}</td>
                   <td className="p-2">{nomeCargo.get(x.idcargo) ?? "—"}</td>

@@ -1,13 +1,21 @@
+"use client";
+
+import { useState } from "react";
+import { anosPromessa } from "@/lib/promessa";
+
 type Opcao = { id: number; rotulo: string };
 export type ValoresUsuario = {
   nome?: string;
   email?: string;
+  registro?: string | null;
   linha?: string;
   idramo?: number | null;
   idcargo?: number | null;
   idsituacao?: number | null;
   idapf?: number | null;
   datasituacao?: string | null;
+  datapromessa?: string | null;
+  reducaopromessa?: number | null;
   membrogrupo?: boolean;
   ativo?: boolean;
 };
@@ -36,6 +44,14 @@ export function FormUsuario(props: {
   pedirSenha?: boolean;
 }) {
   const v = props.valores ?? {};
+  const [promessa, setPromessa] = useState(v.datapromessa?.slice(0, 10) ?? "");
+  const [reducao, setReducao] = useState(
+    v.reducaopromessa === null || v.reducaopromessa === undefined ? "" : String(v.reducaopromessa),
+  );
+
+  // Prévia calculada no próprio formulário; o valor gravado é sempre recalculado a partir das datas.
+  const anos = anosPromessa(promessa || null, reducao === "" ? null : Number(reducao));
+
   return (
     <form action={props.action} className="mt-4 grid gap-3 rounded border border-gray-200 border-l-4 border-l-amarelo bg-white p-4 sm:grid-cols-2">
       <label className="text-sm">Nome *
@@ -45,6 +61,10 @@ export function FormUsuario(props: {
         <input name="email" type="email" required defaultValue={v.email ?? ""} className={campo} />
         <span className="text-xs text-gray-500">O login do usuário usa este e-mail; ao alterar, o acesso também muda.</span>
       </label>
+      <label className="text-sm">Registro *
+        <input name="registro" required maxLength={30} autoComplete="off" defaultValue={v.registro ?? ""} className={campo} />
+        <span className="text-xs text-gray-500">Número da carteira escoteira, ex.: 555749-6.</span>
+      </label>
       <label className="text-sm">Linha de atuação *
         <select name="linha" required defaultValue={v.linha ?? ""} className={campo}>
           <option value="" disabled>Selecione</option>
@@ -52,11 +72,45 @@ export function FormUsuario(props: {
           <option>Dirigente</option>
         </select>
       </label>
+      <Seletor nome="idcargo" rotulo="Função" opcoes={props.cargos} valor={v.idcargo} />
       <Seletor nome="idramo" rotulo="Ramo" opcoes={props.ramos} valor={v.idramo} />
-      <Seletor nome="idcargo" rotulo="Cargo" opcoes={props.cargos} valor={v.idcargo} />
       <Seletor nome="idsituacao" rotulo="Situação" opcoes={props.situacoes} valor={v.idsituacao} />
       <label className="text-sm">Data da situação
-        <input name="datasituacao" type="date" defaultValue={v.datasituacao ?? ""} className={campo} />
+        <input name="datasituacao" type="date" defaultValue={v.datasituacao?.slice(0, 10) ?? ""} className={campo} />
+      </label>
+      <label className="text-sm">Data da promessa
+        <input
+          name="datapromessa"
+          type="date"
+          value={promessa}
+          onChange={(e) => setPromessa(e.target.value)}
+          className={campo}
+        />
+      </label>
+      <label className="text-sm">Redução (anos de promessa)
+        <input
+          name="reducaopromessa"
+          type="number"
+          min={0}
+          step={1}
+          inputMode="numeric"
+          placeholder="0"
+          value={reducao}
+          onChange={(e) => setReducao(e.target.value)}
+          className={campo}
+        />
+        <span className="text-xs text-gray-500">Anos que já contavam antes da promessa e devem ser descontados.</span>
+      </label>
+      <label className="text-sm">Anos de promessa
+        <input
+          value={anos === null ? "" : String(anos)}
+          readOnly
+          tabIndex={-1}
+          aria-readonly="true"
+          placeholder="—"
+          className={`${campo} cursor-default bg-gray-50 text-gray-700`}
+        />
+        <span className="text-xs text-gray-500">Calculado: anos desde a promessa até hoje, menos a redução.</span>
       </label>
       <Seletor nome="idapf" rotulo="APF (assessor pessoal de formação)" opcoes={props.apfs} valor={v.idapf} />
       {props.pedirSenha && (

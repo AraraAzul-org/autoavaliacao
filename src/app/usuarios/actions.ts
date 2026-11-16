@@ -11,12 +11,15 @@ function ler(f: FormData) {
   return {
     nome: String(f.get("nome") ?? "").trim(),
     email: String(f.get("email") ?? "").trim().toLowerCase(),
+    registro: String(f.get("registro") ?? "").trim() || null,
     linha: String(f.get("linha") ?? ""),
     idramo: num("idramo"),
     idcargo: num("idcargo"),
     idsituacao: num("idsituacao"),
     idapf: num("idapf"),
     datasituacao: (f.get("datasituacao") as string) || null,
+    datapromessa: (f.get("datapromessa") as string) || null,
+    reducaopromessa: num("reducaopromessa"),
     membrogrupo: f.get("membrogrupo") === "on",
     ativo: f.get("ativo") === "on",
   };
@@ -29,8 +32,25 @@ async function exigirDiretor() {
   return { supabase, eu };
 }
 
-const msgErro = (code?: string) =>
-  code === "23505" ? "Este e-mail já está cadastrado." : "Não foi possível salvar. Confira os dados.";
+type ErroBanco = { code?: string; message?: string } | null;
+
+const msgErro = (error?: ErroBanco) => {
+  if (error?.code !== "23505") return "Não foi possível salvar. Confira os dados.";
+  return /registro/i.test(error.message ?? "")
+    ? "Este registro já está cadastrado."
+    : "Este e-mail já está cadastrado.";
+};
+
+function validar(d: ReturnType<typeof ler>): string | null {
+  if (!d.nome) return "Informe o nome.";
+  if (!d.email) return "Informe o e-mail.";
+  if (!d.registro) return "Informe o registro.";
+  if (d.reducaopromessa !== null && (!Number.isInteger(d.reducaopromessa) || d.reducaopromessa < 0)) {
+    return "A redução deve ser um número inteiro de anos, sem valor negativo.";
+  }
+  return null;
+}
+
 const SENHA_CURTA = "A senha deve ter pelo menos 8 caracteres.";
 
 export async function criarUsuario(formData: FormData) {
@@ -39,6 +59,8 @@ export async function criarUsuario(formData: FormData) {
   const senha = String(formData.get("senha") ?? "");
   const volta = (m: string): never => redirect(`/usuarios?erro=${encodeURIComponent(m)}`);
 
+  const invalido = validar(d);
+  if (invalido) volta(invalido);
   if (senha.length < 8) volta(SENHA_CURTA);
   if (d.idapf) {
     const { data: apf } = await supabase.from("usuario").select("email").eq("idusuario", d.idapf).maybeSingle();
@@ -46,7 +68,7 @@ export async function criarUsuario(formData: FormData) {
   }
 
   const { data: novo, error } = await supabase.from("usuario").insert(d).select("idusuario").single();
-  if (error || !novo) return volta(msgErro(error?.code));
+  if (error || !novo) return volta(msgErro(error));
 
   const acesso = await gerirAcesso(supabase, { acao: "definir_senha", idusuario: novo.idusuario, senha });
   if (!acesso.ok) {
@@ -63,6 +85,8 @@ export async function atualizarUsuario(id: number, formData: FormData) {
   const d = ler(formData);
   const volta = (m: string): never => redirect(`/usuarios/${id}?erro=${encodeURIComponent(m)}`);
 
+  const invalido = validar(d);
+  if (invalido) volta(invalido);
   if (d.idapf === id) volta("O APF não pode ser o próprio usuário.");
   if (id === eu.idusuario && !d.ativo) volta("Você não pode inativar o seu próprio cadastro.");
 
@@ -101,7 +125,7 @@ export async function atualizarUsuario(id: number, formData: FormData) {
     .update({ ...d, ...registroStatus })
     .eq("idusuario", id)
     .select("idusuario");
-  if (error || !data?.length) volta(msgErro(error?.code));
+  if (error || !data?.length) volta(msgErro(error));
   revalidatePath("/usuarios");
   redirect("/usuarios?ok=salvo");
 }
