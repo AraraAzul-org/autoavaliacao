@@ -8,6 +8,14 @@ import { criarUsuario } from "./actions";
 
 export const instant = false;
 
+const dataBR = (iso: string) =>
+  new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(iso));
+
 export default async function Usuarios({
   searchParams,
 }: {
@@ -20,7 +28,7 @@ export default async function Usuarios({
 
   const { erro, ok } = await searchParams;
   const [u, r, c, s] = await Promise.all([
-    supabase.from("usuario").select("idusuario, nome, email, linha, idramo, idcargo, idsituacao, idapf, membrogrupo, ativo").order("nome"),
+    supabase.from("usuario").select("idusuario, nome, email, linha, idramo, idcargo, idsituacao, idapf, membrogrupo, ativo, datainativacao, idusuarioinativacao").order("nome"),
     supabase.from("ramo").select("idramo, nome").order("nome"),
     supabase.from("cargo").select("idcargo, descricao").order("descricao"),
     supabase.from("situacao").select("idsituacao, situacao").order("idsituacao"),
@@ -75,7 +83,21 @@ export default async function Usuarios({
                   <td className="p-2">{nomeSit.get(x.idsituacao) ?? "—"}</td>
                   <td className="p-2">{nomeUsuario.get(x.idapf) ?? "—"}</td>
                   <td className="p-2">{x.membrogrupo ? "Sim" : "Não"}</td>
-                  <td className="p-2">{x.ativo ? "Ativo" : <span className="text-red-700">Inativo</span>}</td>
+                  <td className="p-2">
+                    {x.ativo ? (
+                      "Ativo"
+                    ) : (
+                      <span className="text-red-700">
+                        Inativo
+                        {x.datainativacao && (
+                          <span className="block text-xs font-normal text-gray-600">
+                            em {dataBR(x.datainativacao)} por{" "}
+                            {nomeUsuario.get(x.idusuarioinativacao ?? 0) ?? "—"}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </td>
                   <td className="p-2"><Link href={`/usuarios/${x.idusuario}`} className="text-azul underline">Editar</Link></td>
                 </tr>
               ))}

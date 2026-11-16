@@ -211,7 +211,7 @@ export default async function Perguntas({
                 <input name="descricao" required placeholder="Ex.: Comprometimento" className={campo} />
               </label>
               <label className="flex flex-col text-sm">
-                <span className="mb-1 text-gray-600">Nota mínima</span>
+                <span className="mb-1 text-gray-600">Nota mínima (etapas de usuário)</span>
                 <input name="notaminima" inputMode="decimal" placeholder="Opcional" className={`${campo} w-28`} />
               </label>
               <label className="flex flex-col text-sm">
@@ -232,7 +232,9 @@ export default async function Perguntas({
           </div>
         </section>
 
-        {etapas.map((et) => (
+        {etapas.map((et) => {
+          const pontua = et.publico === "usuario";
+          return (
           <section key={et.idetapa} className="mt-6 overflow-hidden rounded border border-gray-200 bg-white">
             <div className="flex flex-wrap items-center gap-3 border-b-2 border-amarelo bg-azul p-3 text-white">
               <h2 className="flex-1 font-semibold">
@@ -241,6 +243,18 @@ export default async function Perguntas({
                   {ROTULO_NIVEL[et.publico as Nivel] ?? "Usuário"}
                 </span>
               </h2>
+              <span
+                className={`rounded px-2 py-0.5 text-xs font-medium ${
+                  pontua ? "bg-green-100 text-green-800" : "bg-amarelo text-gray-900"
+                }`}
+                title={
+                  pontua
+                    ? "As respostas desta etapa entram na nota."
+                    : "As respostas desta etapa não entram na nota."
+                }
+              >
+                {pontua ? "Pontua" : "Não pontua"}
+              </span>
               {et.notaminima != null && (
                 <span className="text-xs text-white/90">
                   Nota mínima: {Number(et.notaminima).toLocaleString("pt-BR")}
@@ -256,7 +270,7 @@ export default async function Perguntas({
                     <input name="descricao" required defaultValue={et.descricao} className={campo} />
                   </label>
                   <label className="flex flex-col text-sm">
-                    <span className="mb-1 text-gray-600">Nota mínima</span>
+                    <span className="mb-1 text-gray-600">Nota mínima (etapas de usuário)</span>
                     <input
                       name="notaminima"
                       inputMode="decimal"
@@ -287,7 +301,7 @@ export default async function Perguntas({
               .filter((x) => x.idetapa === et.idetapa)
               .map((pe) => {
                 const opcoes = pontuacoes.filter((x) => x.idpergunta === pe.idpergunta);
-                const semNota = pe.selecao || (opcoes.length > 0 && opcoes.every((o) => o.nota == null));
+                const semNota = !pontua;
                 return (
                   <details key={pe.idpergunta} open={abrir === String(pe.idpergunta)} className="border-b p-3">
                     <summary className="cursor-pointer text-sm">
@@ -340,7 +354,7 @@ export default async function Perguntas({
                         ) : (
                           semNota && (
                             <p className="mt-3 rounded bg-azul/5 p-2 text-sm text-gray-600">
-                              Pergunta sem pontuação: as opções não têm nota e não entram no total.
+                              Esta etapa não pontua: as opções de resposta não entram na nota.
                             </p>
                           )
                         )}
@@ -358,14 +372,15 @@ export default async function Perguntas({
                                   defaultValue={o.descricao}
                                   className={`${campo} min-w-48 flex-1`}
                                 />
-                                {!pe.selecao && (
+                                {pontua && (
                                   <input
                                     name="nota"
+                                    required
                                     defaultValue={o.nota == null ? "" : String(o.nota)}
-                                    placeholder="Sem nota"
+                                    placeholder="Nota"
                                     inputMode="decimal"
                                     className={`${campo} w-24`}
-                                    aria-label="Nota (opcional)"
+                                    aria-label="Nota"
                                   />
                                 )}
                                 <button className={btn}>Salvar</button>
@@ -386,18 +401,13 @@ export default async function Perguntas({
                           <input
                             name="descricao"
                             required
-                            placeholder="Nova pontuação (texto da resposta)"
+                            placeholder={pontua ? "Nova pontuação (texto da resposta)" : "Nova opção de resposta"}
                             className={`${campo} min-w-48 flex-1`}
                           />
-                          {!pe.selecao && (
-                            <input
-                              name="nota"
-                              placeholder="Nota (opcional)"
-                              inputMode="decimal"
-                              className={`${campo} w-28`}
-                            />
+                          {pontua && (
+                            <input name="nota" required placeholder="Nota" inputMode="decimal" className={`${campo} w-20`} />
                           )}
-                          <button className={btn}>Adicionar pontuação</button>
+                          <button className={btn}>{pontua ? "Adicionar pontuação" : "Adicionar opção"}</button>
                         </form>
                       </>
                     )}
@@ -418,7 +428,8 @@ export default async function Perguntas({
               <TipoResposta />
             </form>
           </section>
-        ))}
+          );
+        })}
       </main>
     </Shell>
   );

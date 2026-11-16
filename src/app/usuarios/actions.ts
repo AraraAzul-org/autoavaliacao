@@ -73,7 +73,11 @@ export async function atualizarUsuario(id: number, formData: FormData) {
     if (!cargo?.avalia) volta("Você não pode retirar a sua própria permissão de diretor.");
   }
 
-  const { data: atual } = await supabase.from("usuario").select("email, auth_user_id").eq("idusuario", id).maybeSingle();
+  const { data: atual } = await supabase
+    .from("usuario")
+    .select("email, auth_user_id, ativo")
+    .eq("idusuario", id)
+    .maybeSingle();
   const emailAntigo = String(atual?.email ?? "").trim().toLowerCase();
   const temAcesso = !!atual?.auth_user_id;
   if (!atual) volta("Usuário não encontrado.");
@@ -83,9 +87,17 @@ export async function atualizarUsuario(id: number, formData: FormData) {
     if (!acesso.ok) volta(acesso.erro ?? "Não foi possível alterar o e-mail de acesso.");
   }
 
+  // Registra quem inativou e quando; ao reativar, limpa o registro.
+  const registroStatus =
+    d.ativo === atual.ativo
+      ? {}
+      : d.ativo
+        ? { datainativacao: null, idusuarioinativacao: null }
+        : { datainativacao: new Date().toISOString(), idusuarioinativacao: eu.idusuario };
+
   const { data, error } = await supabase
     .from("usuario")
-    .update(d)
+    .update({ ...d, ...registroStatus })
     .eq("idusuario", id)
     .select("idusuario");
   if (error || !data?.length) volta(msgErro(error?.code));

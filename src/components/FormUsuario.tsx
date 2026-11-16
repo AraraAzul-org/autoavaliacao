@@ -71,7 +71,7 @@ export function FormUsuario(props: {
       </label>
       <label className="flex items-center gap-2 text-sm sm:col-span-2">
         <input name="ativo" type="checkbox" defaultChecked={v.ativo ?? true} />
-        Ativo (desmarque para inativar; o cadastro e o histórico são mantidos)
+        Ativo (ao desmarcar, o sistema registra a data e quem inativou)
       </label>
       <button className="rounded bg-azul p-2 text-white hover:bg-azul-escuro sm:col-span-2">{props.botao}</button>
     </form>

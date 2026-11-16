@@ -58,15 +58,17 @@ export async function salvarEtapa(f: FormData) {
   const idquestionario = idDe(f, "idquestionario");
   const descricao = texto(f, "descricao");
   const q = texto(f, "q") || (idquestionario ? String(idquestionario) : null);
-  const notaTexto = texto(f, "notaminima");
-  const notaminima = notaTexto === "" ? null : Number(notaTexto.replace(",", "."));
   const publico = texto(f, "publico");
   if (!descricao) voltar("erro", "Informe a descrição da etapa.", null, q);
-  if (notaminima != null && Number.isNaN(notaminima))
-    voltar("erro", "Informe uma nota mínima numérica.", null, q);
   if (!["usuario", "apf", "diretor"].includes(publico))
     voltar("erro", "Escolha quem responde as perguntas desta etapa.", null, q);
   if (!id && !idquestionario) voltar("erro", "Escolha o questionário da etapa.", null, q);
+  // Só etapas respondidas pelos usuários entram na nota; nas demais a nota mínima não se aplica.
+  const notaTexto = texto(f, "notaminima");
+  const notaminima =
+    publico === "usuario" && notaTexto !== "" ? Number(notaTexto.replace(",", ".")) : null;
+  if (notaminima != null && Number.isNaN(notaminima))
+    voltar("erro", "Informe uma nota mínima numérica.", null, q);
   const dados = { descricao, notaminima, publico };
   const { error } = id
     ? await supabase.from("etapa").update(dados).eq("idetapa", id)
@@ -124,15 +126,20 @@ export async function salvarPontuacao(f: FormData) {
   const descricao = texto(f, "descricao");
   const { data: pergunta } = await supabase
     .from("pergunta")
-    .select("descritiva, selecao")
+    .select("descritiva, idetapa")
     .eq("idpergunta", idpergunta ?? 0)
     .maybeSingle();
   if (pergunta?.descritiva) voltar("erro", "Pergunta descritiva não tem pontuações.", String(idpergunta), q);
 
-  const selecao = !!pergunta?.selecao;
+  const { data: etapa } = pergunta?.idetapa
+    ? await supabase.from("etapa").select("publico").eq("idetapa", pergunta.idetapa).maybeSingle()
+    : { data: null };
+  const pontua = etapa?.publico === "usuario";
+
   const notaTexto = texto(f, "nota");
   let nota: number | null = null;
-  if (!selecao && notaTexto !== "") {
+  if (pontua) {
+    if (notaTexto === "") voltar("erro", "Informe a nota da pontuação.", String(idpergunta), q);
     const numero = Number(notaTexto.replace(",", "."));
     if (Number.isNaN(numero)) voltar("erro", "A nota deve ser numérica.", String(idpergunta), q);
     nota = numero;
