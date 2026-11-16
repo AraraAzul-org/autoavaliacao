@@ -75,15 +75,15 @@ export default async function Home() {
 
   return (
     <Shell>
-      <main className="max-w-2xl p-6">
+      <main className="w-full max-w-[1600px] p-4 lg:p-6">
         <h1 className="text-xl font-semibold text-azul">{eu.nome}</h1>
         <p className="text-sm text-gray-600">
           {eu.cargo?.descricao} · {avaliacao.data ? `Avaliação ${avaliacao.data.descricao}` : "Nenhuma avaliação aberta"}
         </p>
 
         {eu.podeResultados && (
-          <>
-            <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="mt-6 grid items-start gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]">
+            <section className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="flex flex-wrap items-center gap-2 border-b-2 border-amarelo bg-azul p-3 text-white">
                 <h2 className="flex-1 text-sm font-semibold">Usuários por situação</h2>
                 <span className="rounded bg-white/90 px-2 py-0.5 text-xs font-medium text-gray-800">
@@ -99,7 +99,7 @@ export default async function Home() {
               </div>
             </section>
 
-            <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm">
+            <section className="overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm">
               <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2.5">
                 <h2 className="flex-1 text-sm font-semibold text-gray-800">Usuários e situação</h2>
                 <span className="text-xs text-gray-500">Ordenado por situação e nome</span>
@@ -133,7 +133,7 @@ export default async function Home() {
                 </div>
               )}
             </section>
-          </>
+          </div>
         )}
       </main>
     </Shell>
