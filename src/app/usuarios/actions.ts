@@ -80,6 +80,7 @@ export async function atualizarUsuario(id: number, formData: FormData) {
     .maybeSingle();
   const emailAntigo = String(atual?.email ?? "").trim().toLowerCase();
   const temAcesso = !!atual?.auth_user_id;
+  const ativoAtual = !!atual?.ativo;
   if (!atual) volta("Usuário não encontrado.");
 
   if (d.email !== emailAntigo && temAcesso) {
@@ -89,7 +90,7 @@ export async function atualizarUsuario(id: number, formData: FormData) {
 
   // Registra quem inativou e quando; ao reativar, limpa o registro.
   const registroStatus =
-    d.ativo === atual.ativo
+    d.ativo === ativoAtual
       ? {}
       : d.ativo
         ? { datainativacao: null, idusuarioinativacao: null }
