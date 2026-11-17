@@ -105,7 +105,7 @@ export default async function GerarAvaliacao({
             Nenhum adulto ativo cadastrado. Cadastre os adultos em Usuários antes de gerar a avaliação.
           </p>
         ) : (
-          <SelecionarUsuarios idavaliacao={av.idavaliacao} usuarios={lista} />
+          <SelecionarUsuarios idavaliacao={av.idavaliacao} rascunho={rascunho} usuarios={lista} />
         )}
       </main>
     </Shell>

@@ -101,6 +101,7 @@ export async function gerarAvaliacao(f: FormData) {
 export async function gerarSelecionados(f: FormData) {
   const supabase = await exigirDiretor();
   const id = idDe(f, "idavaliacao");
+  const rascunho = f.get("rascunho") === "1";
   const usuarios = f
     .getAll("usuarios")
     .map((x) => Number(x))
@@ -118,6 +119,7 @@ export async function gerarSelecionados(f: FormData) {
   const r = (data ?? {}) as { novos?: number; selecionados?: number };
   const novos = Number(r.novos ?? 0);
   const selecionados = Number(r.selecionados ?? usuarios.length);
+  const plural = (n: number) => (n === 1 ? "1 adulto" : `${n} adultos`);
 
   if (novos === 0) {
     voltar("ok", "Nenhuma nova avaliação: os adultos selecionados já estavam incluídos.");
@@ -125,10 +127,13 @@ export async function gerarSelecionados(f: FormData) {
   if (novos === selecionados) {
     voltar(
       "ok",
-      novos === 1
-        ? "Avaliação aberta. 1 adulto recebeu a avaliação."
-        : `Avaliação aberta. ${novos} adultos receberam a avaliação.`,
+      rascunho
+        ? `Avaliação aberta. ${plural(novos)} recebeu a avaliação.`
+        : `${plural(novos)} incluído${novos === 1 ? "" : "s"} na avaliação.`,
     );
   }
-  voltar("ok", `${novos} de ${selecionados} adultos receberam a avaliação; os demais já estavam incluídos.`);
+  voltar(
+    "ok",
+    `${novos} de ${selecionados} adultos ${rascunho ? "receberam a avaliação" : "foram incluídos"}; os demais já estavam incluídos.`,
+  );
 }

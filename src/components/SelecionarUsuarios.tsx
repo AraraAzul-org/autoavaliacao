@@ -19,9 +19,11 @@ const btnNeutro =
 
 export function SelecionarUsuarios({
   idavaliacao,
+  rascunho,
   usuarios,
 }: {
   idavaliacao: number;
+  rascunho: boolean;
   usuarios: UsuarioSelecao[];
 }) {
   const [marcados, setMarcados] = useState<Set<number>>(new Set());
@@ -59,6 +61,7 @@ export function SelecionarUsuarios({
   return (
     <form action={gerarSelecionados} className="mt-4">
       <input type="hidden" name="idavaliacao" value={idavaliacao} />
+      <input type="hidden" name="rascunho" value={rascunho ? "1" : "0"} />
 
       <div className="flex flex-wrap items-center gap-3 rounded-t-lg border border-gray-200 border-b-0 bg-gray-50/70 px-4 py-3">
         <label className="flex min-w-52 flex-1 items-center gap-2 text-sm text-gray-700">
