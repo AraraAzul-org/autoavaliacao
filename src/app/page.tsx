@@ -9,6 +9,26 @@ export const instant = false;
 
 const SEM_SITUACAO = "Sem situação";
 
+// Ordem fixa das situações no gráfico da Home. Situações fora desta lista
+// (e "Sem situação") vão para o fim, em ordem alfabética.
+const ORDEM_SITUACOES = [
+  "Formação não iniciada",
+  "Curso Preliminar",
+  "Nível Preliminar",
+  "Curso Intermediário",
+  "Nível Intermediário",
+  "Curso Avançado",
+  "Nível Avançado",
+];
+
+const posicaoSituacao = (rotulo: string) => {
+  const indice = ORDEM_SITUACOES.findIndex(
+    (s) => s.localeCompare(rotulo, "pt-BR", { sensitivity: "base" }) === 0,
+  );
+  if (indice >= 0) return indice;
+  return rotulo === SEM_SITUACAO ? ORDEM_SITUACOES.length : ORDEM_SITUACOES.length + 1;
+};
+
 const dataBR = (iso: string | null) => (iso ? iso.slice(0, 10).split("-").reverse().join("/") : "—");
 
 type PessoaBruta = { idusuario: number; nome: string; idsituacao: number | null; datasituacao: string | null };
@@ -58,7 +78,8 @@ export default async function Home() {
     }))
     .sort(
       (a, b) =>
-        (a.situacao || "\uffff").localeCompare(b.situacao || "\uffff", "pt-BR", { sensitivity: "base" }) ||
+        posicaoSituacao(a.situacao || SEM_SITUACAO) - posicaoSituacao(b.situacao || SEM_SITUACAO) ||
+        a.situacao.localeCompare(b.situacao, "pt-BR", { sensitivity: "base" }) ||
         a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
     );
 
@@ -68,8 +89,7 @@ export default async function Home() {
     .map(([rotulo, quantidade]) => ({ rotulo: rotulo || SEM_SITUACAO, quantidade }))
     .sort(
       (a, b) =>
-        b.quantidade - a.quantidade ||
-        (a.rotulo === SEM_SITUACAO ? 1 : b.rotulo === SEM_SITUACAO ? -1 : 0) ||
+        posicaoSituacao(a.rotulo) - posicaoSituacao(b.rotulo) ||
         a.rotulo.localeCompare(b.rotulo, "pt-BR", { sensitivity: "base" }),
     );
 

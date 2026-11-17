@@ -82,6 +82,7 @@ export function MenuItens({
 
       {diretor && ligacao({ href: "/promessas", rotulo: "Promessas" })}
       {resultados && ligacao({ href: "/resultados", rotulo: "Resultados" })}
+      {resultados && ligacao({ href: "/consulta", rotulo: "Consulta" })}
       {ligacao({ href: "/minhas-avaliacoes", rotulo: "Minhas avaliações" })}
       {ligacao({ href: "/meus-assessorados", rotulo: "Meus assessorados" })}
       {parecer && ligacao({ href: "/parecer", rotulo: "Parecer" })}

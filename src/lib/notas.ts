@@ -110,3 +110,110 @@ export async function carregarNotas(
 
   return notas;
 }
+
+export type NotaEtapa = {
+  idetapa: number;
+  descricao: string;
+  total: number;
+  maximo: number;
+  percentual: number;
+};
+
+/**
+ * Notas de uma avaliação separadas por etapa — cada etapa é um eixo do radar.
+ * Segue a mesma regra da nota geral: só etapas de nível Usuário, que pontuam,
+ * e perguntas que não são descritivas nem de seleção.
+ */
+export async function carregarNotasEtapas(
+  supabase: SupabaseClient,
+  avaliacao: { idavaliacao: number; idquestionario: number },
+  idsUsuarios: number[],
+): Promise<{ etapas: { idetapa: number; descricao: string }[]; porUsuario: Map<number, NotaEtapa[]> }> {
+  const usuarios = [...new Set(idsUsuarios.filter((x) => Number.isInteger(x)))];
+  const porUsuario = new Map<number, NotaEtapa[]>();
+  if (!usuarios.length) return { etapas: [], porUsuario };
+
+  const { data: etapasData } = await supabase
+    .from("etapa")
+    .select("idetapa, descricao")
+    .eq("idquestionario", avaliacao.idquestionario)
+    .eq("publico", "usuario")
+    .eq("naopontuada", false)
+    .order("idetapa", { ascending: true });
+  const etapas = (etapasData ?? []) as { idetapa: number; descricao: string }[];
+  if (!etapas.length) return { etapas: [], porUsuario };
+
+  const { data: perguntasData } = await supabase
+    .from("pergunta")
+    .select("idpergunta, idetapa, descritiva, selecao")
+    .in("idetapa", etapas.map((e) => e.idetapa));
+  const perguntas = ((perguntasData ?? []) as Pergunta[]).filter((p) => !p.descritiva && !p.selecao);
+  if (!perguntas.length) return { etapas: [], porUsuario };
+
+  const { data: pontuacoesData } = await supabase
+    .from("pontuacao")
+    .select("idpontuacao, idpergunta, nota")
+    .in("idpergunta", perguntas.map((p) => p.idpergunta));
+  const pontuacoes = (pontuacoesData ?? []) as Pontuacao[];
+
+  const maximoPorPergunta = new Map<number, number>();
+  pontuacoes.forEach((o) => {
+    if (o.nota == null) return;
+    const n = Number(o.nota);
+    if (!Number.isFinite(n)) return;
+    maximoPorPergunta.set(o.idpergunta, Math.max(maximoPorPergunta.get(o.idpergunta) ?? 0, n));
+  });
+
+  const maximoPorEtapa = new Map<number, number>();
+  const perguntaDaEtapa = new Map<number, number>();
+  perguntas.forEach((p) => {
+    const max = maximoPorPergunta.get(p.idpergunta);
+    if (max == null) return;
+    perguntaDaEtapa.set(p.idpergunta, p.idetapa);
+    maximoPorEtapa.set(p.idetapa, (maximoPorEtapa.get(p.idetapa) ?? 0) + max);
+  });
+
+  const etapasValidas = etapas.filter((e) => (maximoPorEtapa.get(e.idetapa) ?? 0) > 0);
+  const idsPerguntas = [...perguntaDaEtapa.keys()];
+  if (!etapasValidas.length || !idsPerguntas.length) return { etapas: [], porUsuario };
+
+  const { data: respostasData } = await supabase
+    .from("resposta")
+    .select("idusuario, idpergunta, idpontuacao")
+    .eq("idavaliacao", avaliacao.idavaliacao)
+    .in("idusuario", usuarios)
+    .in("idpergunta", idsPerguntas);
+
+  const pontuacaoDa = new Map(pontuacoes.map((o) => [o.idpontuacao, o]));
+  const somas = new Map<string, number>();
+
+  (respostasData ?? []).forEach((r) => {
+    const idetapa = perguntaDaEtapa.get(Number(r.idpergunta));
+    if (!idetapa) return;
+    const o = r.idpontuacao != null ? pontuacaoDa.get(Number(r.idpontuacao)) : null;
+    if (!o || o.nota == null) return;
+    const n = Number(o.nota);
+    if (!Number.isFinite(n)) return;
+    const chaveSoma = `${Number(r.idusuario)}:${idetapa}`;
+    somas.set(chaveSoma, (somas.get(chaveSoma) ?? 0) + n);
+  });
+
+  usuarios.forEach((idusuario) => {
+    porUsuario.set(
+      idusuario,
+      etapasValidas.map((e) => {
+        const total = somas.get(`${idusuario}:${e.idetapa}`) ?? 0;
+        const maximo = maximoPorEtapa.get(e.idetapa) ?? 0;
+        return {
+          idetapa: e.idetapa,
+          descricao: e.descricao,
+          total,
+          maximo,
+          percentual: maximo > 0 ? (total / maximo) * 100 : 0,
+        };
+      }),
+    );
+  });
+
+  return { etapas: etapasValidas.map((e) => ({ idetapa: e.idetapa, descricao: e.descricao })), porUsuario };
+}
