@@ -76,12 +76,7 @@ export default async function Home() {
       situacao: (p.idsituacao != null ? nomeSituacao.get(p.idsituacao) : "") ?? "",
       datasituacao: p.datasituacao,
     }))
-    .sort(
-      (a, b) =>
-        posicaoSituacao(a.situacao || SEM_SITUACAO) - posicaoSituacao(b.situacao || SEM_SITUACAO) ||
-        a.situacao.localeCompare(b.situacao, "pt-BR", { sensitivity: "base" }) ||
-        a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
-    );
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
 
   const contagem = new Map<string, number>();
   pessoas.forEach((p) => contagem.set(p.situacao, (contagem.get(p.situacao) ?? 0) + 1));
@@ -122,7 +117,7 @@ export default async function Home() {
             <section className="overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm">
               <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2.5">
                 <h2 className="flex-1 text-sm font-semibold text-gray-800">Usuários e situação</h2>
-                <span className="text-xs text-gray-500">Ordenado por situação e nome</span>
+                <span className="text-xs text-gray-500">Ordenado por nome</span>
               </div>
               {!pessoas.length ? (
                 <p className="px-4 py-4 text-sm text-gray-600">Nenhum usuário cadastrado.</p>

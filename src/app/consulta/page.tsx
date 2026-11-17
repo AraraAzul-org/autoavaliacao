@@ -46,19 +46,32 @@ export default async function Consulta({
   if (!eu) redirect("/login");
   if (!eu.podeResultados) redirect("/");
 
-  const { avaliacao: texto, de, ate } = await searchParams;
+  const params = await searchParams;
+  const { avaliacao: texto, de, ate } = params;
   const busca = (texto ?? "").trim();
   const inicio = dataValida(de);
   const fim = dataValida(ate);
 
-  const [{ data: lista }, { data: questionarios }, { data: participacoes }] = await Promise.all([
-    supabase
-      .from("avaliacao")
-      .select("idavaliacao, descricao, prazo, status, datageracao, datafinalizacao, idquestionario")
-      .order("idavaliacao", { ascending: false }),
-    supabase.from("questionario").select("idquestionario, descricao"),
-    supabase.from("avaliacaousuario").select("idavaliacao, status"),
-  ]);
+  // A tela abre sem carregar avaliação nenhuma: só lista depois que a pessoa
+  // pesquisa (nome e/ou período).
+  const pesquisou = ["avaliacao", "de", "ate"].some((k) => k in params);
+
+  const vazia = {
+    lista: [] as Avaliacao[],
+    questionarios: [] as { idquestionario: number; descricao: string }[],
+    participacoes: [] as { idavaliacao: number; status: string }[],
+  };
+
+  const [lista, questionarios, participacoes] = pesquisou
+    ? await Promise.all([
+        supabase
+          .from("avaliacao")
+          .select("idavaliacao, descricao, prazo, status, datageracao, datafinalizacao, idquestionario")
+          .order("idavaliacao", { ascending: false }),
+        supabase.from("questionario").select("idquestionario, descricao"),
+        supabase.from("avaliacaousuario").select("idavaliacao, status"),
+      ])
+    : [vazia.lista, vazia.questionarios, vazia.participacoes];
 
   const nomeQuestionario = new Map((questionarios ?? []).map((q) => [q.idquestionario, q.descricao]));
 
@@ -70,7 +83,7 @@ export default async function Consulta({
     contagem.set(p.idavaliacao, atual);
   });
 
-  const todas = ((lista ?? []) as Avaliacao[]).map((a) => ({
+  const todas = (lista ?? []).map((a) => ({
     ...a,
     participantes: contagem.get(a.idavaliacao)?.total ?? 0,
     concluidas: contagem.get(a.idavaliacao)?.concluidas ?? 0,
@@ -85,7 +98,7 @@ export default async function Consulta({
     return true;
   });
 
-  const temFiltro = !!(busca || inicio || fim);
+  const temFiltro = pesquisou;
 
   return (
     <Shell>
@@ -120,9 +133,11 @@ export default async function Consulta({
               Limpar filtro
             </Link>
           )}
-          <span className="ml-auto rounded bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200">
-            {avaliacoes.length} de {todas.length} {todas.length === 1 ? "avaliação" : "avaliações"}
-          </span>
+          {pesquisou && (
+            <span className="ml-auto rounded bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200">
+              {avaliacoes.length} de {todas.length} {todas.length === 1 ? "avaliação" : "avaliações"}
+            </span>
+          )}
         </form>
         <p className="mt-2 text-xs text-gray-500">
           O período considera a data de geração e o prazo de cada avaliação.
@@ -130,9 +145,9 @@ export default async function Consulta({
 
         {!avaliacoes.length && (
           <p className="mt-6 rounded border border-gray-200 bg-white p-4 text-sm text-gray-600">
-            {temFiltro
+            {pesquisou
               ? "Nenhuma avaliação encontrada com esses filtros."
-              : "Nenhuma avaliação cadastrada ainda."}
+              : "Informe o nome da avaliação ou o período e clique em Consultar para ver os resultados."}
           </p>
         )}
 
