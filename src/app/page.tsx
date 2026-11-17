@@ -75,7 +75,7 @@ export default async function Home() {
 
   return (
     <Shell>
-      <main className="w-full max-w-[1600px] p-4 lg:p-6">
+      <main className="w-full p-4 lg:p-6">
         <h1 className="text-xl font-semibold text-azul">{eu.nome}</h1>
         <p className="text-sm text-gray-600">
           {eu.cargo?.descricao} · {avaliacao.data ? `Avaliação ${avaliacao.data.descricao}` : "Nenhuma avaliação aberta"}
@@ -120,8 +120,8 @@ export default async function Home() {
                     <tbody className="divide-y divide-gray-100">
                       {pessoas.map((p) => (
                         <tr key={p.idusuario}>
-                          <td className="px-4 py-2 text-gray-700">{p.situacao || SEM_SITUACAO}</td>
-                          <td className="px-4 py-2 font-medium text-gray-900">{p.nome}</td>
+                          <td className="whitespace-nowrap px-4 py-2 text-gray-700">{p.situacao || SEM_SITUACAO}</td>
+                          <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">{p.nome}</td>
                           <td className="whitespace-nowrap px-4 py-2 text-gray-600">{dataBR(p.datasituacao)}</td>
                           <td className="whitespace-nowrap px-4 py-2 text-right text-gray-700">
                             {tempoDesde(p.datasituacao)}

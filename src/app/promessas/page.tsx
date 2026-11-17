@@ -38,11 +38,7 @@ export default async function Promessas({
 
   const pessoas = ((data ?? []) as Bruto[])
     .filter((p) => Number(String(p.datapromessa).slice(5, 7)) === mesEscolhido)
-    .sort(
-      (a, b) =>
-        String(a.datapromessa).slice(8, 10).localeCompare(String(b.datapromessa).slice(8, 10)) ||
-        a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
-    )
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }))
     .map((p) => ({ ...p, anos: anosPromessa(p.datapromessa, p.reducaopromessa) }));
 
   return (

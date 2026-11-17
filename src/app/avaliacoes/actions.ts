@@ -96,3 +96,39 @@ export async function gerarAvaliacao(f: FormData) {
   if (novos === 0) voltar("ok", "Nenhuma nova avaliação: todos os adultos ativos já estavam incluídos.");
   voltar("ok", novos === 1 ? "Avaliação aberta. 1 adulto recebeu a avaliação." : `Avaliação aberta. ${novos} adultos receberam a avaliação.`);
 }
+
+// Gera (ou completa) a avaliação apenas para os adultos marcados na tela de seleção.
+export async function gerarSelecionados(f: FormData) {
+  const supabase = await exigirDiretor();
+  const id = idDe(f, "idavaliacao");
+  const usuarios = f
+    .getAll("usuarios")
+    .map((x) => Number(x))
+    .filter((x) => Number.isInteger(x));
+
+  if (!id) voltar("erro", "Pedido inválido.");
+  if (!usuarios.length) voltar("erro", "Selecione ao menos um adulto para gerar a avaliação.");
+
+  const { data, error } = await supabase.rpc("gerar_avaliacao_selecionados", {
+    p_id: id,
+    p_usuarios: usuarios,
+  });
+  if (error) voltar("erro", mensagem(error));
+
+  const r = (data ?? {}) as { novos?: number; selecionados?: number };
+  const novos = Number(r.novos ?? 0);
+  const selecionados = Number(r.selecionados ?? usuarios.length);
+
+  if (novos === 0) {
+    voltar("ok", "Nenhuma nova avaliação: os adultos selecionados já estavam incluídos.");
+  }
+  if (novos === selecionados) {
+    voltar(
+      "ok",
+      novos === 1
+        ? "Avaliação aberta. 1 adulto recebeu a avaliação."
+        : `Avaliação aberta. ${novos} adultos receberam a avaliação.`,
+    );
+  }
+  voltar("ok", `${novos} de ${selecionados} adultos receberam a avaliação; os demais já estavam incluídos.`);
+}

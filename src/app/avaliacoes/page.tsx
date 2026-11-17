@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
-import { ConfirmarGeracao } from "@/components/ConfirmarGeracao";
 import { ConfirmarExclusao } from "@/components/ConfirmarExclusao";
 import { ConfirmarCancelamento } from "@/components/ConfirmarCancelamento";
 import { salvarAvaliacao } from "./actions";
@@ -199,13 +199,25 @@ export default async function Avaliacoes({
                     Aberta em <strong>{dataBR(av.datageracao.slice(0, 10))}</strong>
                   </span>
                 )}
-                {av.status !== "finalizada" && (
-                  <ConfirmarGeracao
-                    idavaliacao={av.idavaliacao}
-                    rascunho={rascunho}
-                    semPerguntas={(perguntasPorQuestionario.get(av.idquestionario) ?? 0) === 0}
-                  />
-                )}
+                {av.status !== "finalizada" &&
+                  ((perguntasPorQuestionario.get(av.idquestionario) ?? 0) === 0 ? (
+                    <div className="ml-auto text-right">
+                      <span className="cursor-not-allowed rounded border border-gray-300 px-2 py-1 text-xs text-gray-400">
+                        Gerar avaliações
+                      </span>
+                      <p className="mt-1 max-w-72 text-xs text-red-700">
+                        O questionário escolhido não tem perguntas. Cadastre as perguntas em Questionário antes de
+                        gerar.
+                      </p>
+                    </div>
+                  ) : (
+                    <Link
+                      href={`/avaliacoes/${av.idavaliacao}/gerar`}
+                      className="ml-auto rounded border border-azul px-2 py-1 text-xs font-medium text-azul hover:bg-azul/10"
+                    >
+                      {rascunho ? "Gerar avaliações" : "Incluir novos adultos"}
+                    </Link>
+                  ))}
               </div>
             </section>
           );

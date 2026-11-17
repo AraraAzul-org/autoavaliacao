@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -40,16 +41,42 @@ export function MenuItens({
     );
   };
 
+  // O grupo nasce fechado. Se a pessoa estiver dentro de um cadastro, ele abre
+  // sozinho para mostrar onde ela está; clicar no título abre e fecha.
+  const dentroDeCadastros = CADASTROS.some(
+    (i) => caminho === i.href || caminho.startsWith(`${i.href}/`),
+  );
+  const [escolha, setEscolha] = useState<boolean | null>(null);
+  const aberto = escolha ?? dentroDeCadastros;
+
   return (
     <nav className="flex gap-1 overflow-x-auto border-b bg-gray-50 p-2 md:w-60 md:shrink-0 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3">
       {ligacao({ href: "/", rotulo: "Início" })}
 
       {diretor && (
         <div className="flex items-center gap-1 md:mt-2 md:flex-col md:items-stretch md:gap-0.5">
-          <span className="whitespace-nowrap px-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 md:px-3 md:pb-0.5 md:pt-1">
+          <button
+            type="button"
+            onClick={() => setEscolha(!aberto)}
+            aria-expanded={aberto}
+            aria-controls="menu-cadastros"
+            className={`${base} flex shrink-0 items-center gap-1.5 ${
+              dentroDeCadastros ? "font-medium text-azul" : "text-azul"
+            } hover:bg-azul/10`}
+          >
+            <span
+              aria-hidden="true"
+              className={`text-[10px] transition-transform ${aberto ? "rotate-90" : ""}`}
+            >
+              ▶
+            </span>
             Cadastros
-          </span>
-          {CADASTROS.map((item) => ligacao(item, "md:pl-5"))}
+          </button>
+          {aberto && (
+            <div id="menu-cadastros" className="flex gap-1 md:flex-col md:gap-0.5">
+              {CADASTROS.map((item) => ligacao(item, "md:pl-5"))}
+            </div>
+          )}
         </div>
       )}
 

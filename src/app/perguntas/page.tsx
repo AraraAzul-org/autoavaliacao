@@ -68,7 +68,7 @@ export default async function Perguntas({
     supabase.from("questionario").select("idquestionario, descricao, ativo").order("idquestionario"),
     supabase
       .from("etapa")
-      .select("idetapa, idquestionario, descricao, notaminima, publico")
+      .select("idetapa, idquestionario, descricao, notaminima, publico, naopontuada")
       .order("idetapa"),
     supabase.from("pergunta").select("idpergunta, codigo, descricao, idetapa, descritiva, selecao").order("codigo"),
     supabase.from("pontuacao").select("idpontuacao, idpergunta, descricao, nota").order("nota"),
@@ -224,6 +224,10 @@ export default async function Perguntas({
                   ))}
                 </select>
               </label>
+              <label className="flex items-center gap-2 pb-1.5 text-sm">
+                <input type="checkbox" name="naopontuada" />
+                Não pontuada
+              </label>
               <button className={btn}>Adicionar etapa</button>
             </form>
             {!etapas.length && (
@@ -233,7 +237,7 @@ export default async function Perguntas({
         </section>
 
         {etapas.map((et) => {
-          const pontua = et.publico === "usuario";
+          const pontua = et.publico === "usuario" && !et.naopontuada;
           return (
           <section key={et.idetapa} className="mt-6 overflow-hidden rounded border border-gray-200 bg-white">
             <div className="flex flex-wrap items-center gap-3 border-b-2 border-amarelo bg-azul p-3 text-white">
@@ -248,12 +252,14 @@ export default async function Perguntas({
                   pontua ? "bg-green-100 text-green-800" : "bg-amarelo text-gray-900"
                 }`}
                 title={
-                  pontua
-                    ? "As respostas desta etapa entram na nota."
-                    : "As respostas desta etapa não entram na nota."
+                  et.naopontuada
+                    ? "Etapa não pontuada: as respostas são registradas, mas não entram na nota."
+                    : pontua
+                      ? "As respostas desta etapa entram na nota."
+                      : "As respostas desta etapa não entram na nota."
                 }
               >
-                {pontua ? "Pontua" : "Não pontua"}
+                {et.naopontuada ? "Não pontuada" : pontua ? "Pontua" : "Não pontua"}
               </span>
               {et.notaminima != null && (
                 <span className="text-xs text-white/90">
@@ -288,6 +294,10 @@ export default async function Perguntas({
                         </option>
                       ))}
                     </select>
+                  </label>
+                  <label className="flex items-center gap-2 pb-1.5 text-sm">
+                    <input type="checkbox" name="naopontuada" defaultChecked={et.naopontuada} />
+                    Não pontuada
                   </label>
                   <button className={btn}>Salvar</button>
                 </form>
@@ -354,7 +364,9 @@ export default async function Perguntas({
                         ) : (
                           semNota && (
                             <p className="mt-3 rounded bg-azul/5 p-2 text-sm text-gray-600">
-                              Esta etapa não pontua: as opções de resposta não entram na nota.
+                              {et.naopontuada
+                                ? "Etapa não pontuada: as respostas são registradas, mas as opções não entram na nota."
+                                : "Esta etapa não pontua: as opções de resposta não entram na nota."}
                             </p>
                           )
                         )}

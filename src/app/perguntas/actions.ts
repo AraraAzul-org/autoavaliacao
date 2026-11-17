@@ -59,17 +59,18 @@ export async function salvarEtapa(f: FormData) {
   const descricao = texto(f, "descricao");
   const q = texto(f, "q") || (idquestionario ? String(idquestionario) : null);
   const publico = texto(f, "publico");
+  const naopontuada = f.get("naopontuada") === "on";
   if (!descricao) voltar("erro", "Informe a descrição da etapa.", null, q);
   if (!["usuario", "apf", "diretor"].includes(publico))
     voltar("erro", "Escolha quem responde as perguntas desta etapa.", null, q);
   if (!id && !idquestionario) voltar("erro", "Escolha o questionário da etapa.", null, q);
-  // Só etapas respondidas pelos usuários entram na nota; nas demais a nota mínima não se aplica.
+  // Etapas não pontuadas e as que não são respondidas pelos usuários não entram na nota.
+  const pontua = publico === "usuario" && !naopontuada;
   const notaTexto = texto(f, "notaminima");
-  const notaminima =
-    publico === "usuario" && notaTexto !== "" ? Number(notaTexto.replace(",", ".")) : null;
+  const notaminima = pontua && notaTexto !== "" ? Number(notaTexto.replace(",", ".")) : null;
   if (notaminima != null && Number.isNaN(notaminima))
     voltar("erro", "Informe uma nota mínima numérica.", null, q);
-  const dados = { descricao, notaminima, publico };
+  const dados = { descricao, notaminima, publico, naopontuada };
   const { error } = id
     ? await supabase.from("etapa").update(dados).eq("idetapa", id)
     : await supabase.from("etapa").insert({ ...dados, idquestionario });
@@ -132,9 +133,13 @@ export async function salvarPontuacao(f: FormData) {
   if (pergunta?.descritiva) voltar("erro", "Pergunta descritiva não tem pontuações.", String(idpergunta), q);
 
   const { data: etapa } = pergunta?.idetapa
-    ? await supabase.from("etapa").select("publico").eq("idetapa", pergunta.idetapa).maybeSingle()
+    ? await supabase
+        .from("etapa")
+        .select("publico, naopontuada")
+        .eq("idetapa", pergunta.idetapa)
+        .maybeSingle()
     : { data: null };
-  const pontua = etapa?.publico === "usuario";
+  const pontua = etapa?.publico === "usuario" && !etapa?.naopontuada;
 
   const notaTexto = texto(f, "nota");
   let nota: number | null = null;
@@ -146,8 +151,13 @@ export async function salvarPontuacao(f: FormData) {
   }
   if (!idpergunta || !descricao) voltar("erro", "Informe a descrição da opção.", String(idpergunta), q);
 
+  // Em etapa que não pontua, a nota já gravada é preservada: se a etapa voltar
+  // a pontuar, as notas antigas continuam valendo.
   const { error } = id
-    ? await supabase.from("pontuacao").update({ descricao, nota }).eq("idpontuacao", id)
+    ? await supabase
+        .from("pontuacao")
+        .update(pontua ? { descricao, nota } : { descricao })
+        .eq("idpontuacao", id)
     : await supabase.from("pontuacao").insert({ idpergunta, descricao, nota });
   if (error) voltar("erro", falha(error), String(idpergunta), q);
   voltar("ok", "Pontuação salva.", String(idpergunta), q);

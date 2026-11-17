@@ -13,12 +13,13 @@ export function formatarNota(valor: number) {
 }
 
 type Avaliacao = { idavaliacao: number; idquestionario: number };
-type Etapa = { idetapa: number; idquestionario: number };
+type Etapa = { idetapa: number; idquestionario: number; naopontuada: boolean };
 type Pergunta = { idpergunta: number; idetapa: number; descritiva: boolean; selecao: boolean };
 type Pontuacao = { idpontuacao: number; idpergunta: number; nota: number | string | null };
 
 // Soma as notas das opções escolhidas nas perguntas de nível Usuário.
-// Perguntas descritivas, de seleção e opções sem nota ficam de fora.
+// Etapas marcadas como "Não pontuada", perguntas descritivas, de seleção e
+// opções sem nota ficam de fora.
 export async function carregarNotas(
   supabase: SupabaseClient,
   avaliacoes: Avaliacao[],
@@ -36,9 +37,10 @@ export async function carregarNotas(
   const questionarios = [...new Set(unicas.map((a) => a.idquestionario))];
   const { data: etapasData } = await supabase
     .from("etapa")
-    .select("idetapa, idquestionario")
+    .select("idetapa, idquestionario, naopontuada")
     .in("idquestionario", questionarios)
-    .eq("publico", "usuario");
+    .eq("publico", "usuario")
+    .eq("naopontuada", false);
   const etapas = (etapasData ?? []) as Etapa[];
   const idsEtapas = etapas.map((e) => e.idetapa);
   if (!idsEtapas.length) return notas;
