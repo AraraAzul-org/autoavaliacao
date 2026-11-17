@@ -11,7 +11,7 @@ type Bruto = {
   idusuario: number;
   nome: string;
   datapromessa: string;
-  reducaopromessa: number | null;
+  deducaopromessa: number | null;
 };
 
 export default async function Promessas({
@@ -32,14 +32,14 @@ export default async function Promessas({
 
   const { data } = await supabase
     .from("usuario")
-    .select("idusuario, nome, datapromessa, reducaopromessa")
+    .select("idusuario, nome, datapromessa, deducaopromessa")
     .eq("ativo", true)
     .not("datapromessa", "is", null);
 
   const pessoas = ((data ?? []) as Bruto[])
     .filter((p) => Number(String(p.datapromessa).slice(5, 7)) === mesEscolhido)
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }))
-    .map((p) => ({ ...p, anos: anosPromessa(p.datapromessa, p.reducaopromessa) }));
+    .map((p) => ({ ...p, anos: anosPromessa(p.datapromessa, p.deducaopromessa) }));
 
   return (
     <Shell>
@@ -70,7 +70,7 @@ export default async function Promessas({
                   <tr className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                     <th className="px-4 py-2 font-medium">Nome</th>
                     <th className="px-4 py-2 font-medium">Data da promessa</th>
-                    <th className="px-4 py-2 font-medium">Redução</th>
+                    <th className="px-4 py-2 font-medium">Dedução</th>
                     <th className="px-4 py-2 text-right font-medium">Anos de promessa</th>
                   </tr>
                 </thead>
@@ -80,9 +80,9 @@ export default async function Promessas({
                       <td className="px-4 py-2 font-medium text-gray-900">{p.nome}</td>
                       <td className="whitespace-nowrap px-4 py-2 text-gray-600">{dataBR(p.datapromessa)}</td>
                       <td className="whitespace-nowrap px-4 py-2 text-gray-600">
-                        {p.reducaopromessa == null
+                        {p.deducaopromessa == null
                           ? "—"
-                          : `${p.reducaopromessa} ${p.reducaopromessa === 1 ? "ano" : "anos"}`}
+                          : `${p.deducaopromessa} ${p.deducaopromessa === 1 ? "ano" : "anos"}`}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2 text-right text-gray-700">
                         {p.anos === null ? "—" : `${p.anos} ${p.anos === 1 ? "ano" : "anos"}`}

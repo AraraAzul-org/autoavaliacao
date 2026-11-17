@@ -8,6 +8,9 @@ import { criarUsuario } from "./actions";
 
 export const instant = false;
 
+const campo = "rounded border border-gray-300 bg-white p-1.5 text-sm";
+const btn = "rounded bg-azul px-3 py-1.5 text-sm text-white hover:bg-azul-escuro";
+
 const dataBR = (iso: string) =>
   new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo",
@@ -19,14 +22,21 @@ const dataBR = (iso: string) =>
 export default async function Usuarios({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string; ok?: string }>;
+  searchParams: Promise<{
+    erro?: string;
+    ok?: string;
+    ramo?: string;
+    linha?: string;
+    cargo?: string;
+    situacao?: string;
+  }>;
 }) {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
   if (!eu.diretor) redirect("/");
 
-  const { erro, ok } = await searchParams;
+  const { erro, ok, ramo, linha, cargo, situacao } = await searchParams;
   const [u, r, c, s] = await Promise.all([
     supabase.from("usuario").select("idusuario, nome, email, registro, linha, idramo, idcargo, idsituacao, idapf, membrogrupo, ativo, datainativacao, idusuarioinativacao").order("nome"),
     supabase.from("ramo").select("idramo, nome").order("nome"),
@@ -42,9 +52,25 @@ export default async function Usuarios({
   const nomeCargo = new Map(cargos.map((x) => [x.idcargo, x.descricao]));
   const nomeSit = new Map(situacoes.map((x) => [x.idsituacao, x.situacao]));
 
+  // Filtros da lista: vazios mostram todos. São lidos da URL para a tela
+  // continuar funcionando sem JavaScript.
+  const ramoEscolhido = ramo ? Number(ramo) : null;
+  const cargoEscolhido = cargo ? Number(cargo) : null;
+  const situacaoEscolhida = situacao ? Number(situacao) : null;
+  const linhaEscolhida = linha === "Escotista" || linha === "Dirigente" ? linha : null;
+  const temFiltro = !!(ramoEscolhido || cargoEscolhido || situacaoEscolhida || linhaEscolhida);
+
+  const filtrados = usuarios.filter(
+    (x) =>
+      (!ramoEscolhido || x.idramo === ramoEscolhido) &&
+      (!cargoEscolhido || x.idcargo === cargoEscolhido) &&
+      (!situacaoEscolhida || x.idsituacao === situacaoEscolhida) &&
+      (!linhaEscolhida || x.linha === linhaEscolhida),
+  );
+
   return (
     <Shell>
-      <main className="max-w-4xl p-4">
+      <main className="w-full p-4">
         <h1 className="text-xl font-semibold text-azul">Cadastro de usuários</h1>
 
         {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
@@ -64,7 +90,50 @@ export default async function Usuarios({
           apfs={usuarios.map((x) => ({ id: x.idusuario, rotulo: x.nome }))}
         />
 
-        <div className="mt-6 overflow-x-auto">
+        <form className="mt-6 flex flex-wrap items-end gap-2 rounded border border-gray-200 bg-white p-3">
+          <label className="flex flex-col text-sm">Ramo
+            <select name="ramo" defaultValue={ramo ?? ""} className={campo}>
+              <option value="">Todos</option>
+              {ramos.map((x) => (
+                <option key={x.idramo} value={x.idramo}>{x.nome}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col text-sm">Linha de atuação
+            <select name="linha" defaultValue={linha ?? ""} className={campo}>
+              <option value="">Todas</option>
+              <option>Escotista</option>
+              <option>Dirigente</option>
+            </select>
+          </label>
+          <label className="flex flex-col text-sm">Função
+            <select name="cargo" defaultValue={cargo ?? ""} className={campo}>
+              <option value="">Todas</option>
+              {cargos.map((x) => (
+                <option key={x.idcargo} value={x.idcargo}>{x.descricao}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col text-sm">Situação
+            <select name="situacao" defaultValue={situacao ?? ""} className={campo}>
+              <option value="">Todas</option>
+              {situacoes.map((x) => (
+                <option key={x.idsituacao} value={x.idsituacao}>{x.situacao}</option>
+              ))}
+            </select>
+          </label>
+          <button className={btn}>Filtrar</button>
+          {temFiltro && (
+            <Link href="/usuarios" className="pb-1.5 text-sm text-azul underline">
+              Limpar filtro
+            </Link>
+          )}
+          <span className="ml-auto rounded bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200">
+            {filtrados.length} de {usuarios.length} {usuarios.length === 1 ? "usuário" : "usuários"}
+          </span>
+        </form>
+
+        <div className="mt-4 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-azul text-white">
               <tr>
@@ -74,34 +143,42 @@ export default async function Usuarios({
               </tr>
             </thead>
             <tbody className="divide-y">
-              {usuarios.map((x) => (
-                <tr key={x.idusuario}>
-                  <td className="p-2">{x.nome}<div className="text-xs text-gray-500">{x.email}</div></td>
-                  <td className="whitespace-nowrap p-2">{x.registro ?? "—"}</td>
-                  <td className="p-2">{x.linha}</td>
-                  <td className="p-2">{nomeRamo.get(x.idramo) ?? "—"}</td>
-                  <td className="p-2">{nomeCargo.get(x.idcargo) ?? "—"}</td>
-                  <td className="p-2">{nomeSit.get(x.idsituacao) ?? "—"}</td>
-                  <td className="p-2">{nomeUsuario.get(x.idapf) ?? "—"}</td>
-                  <td className="p-2">{x.membrogrupo ? "Sim" : "Não"}</td>
-                  <td className="p-2">
-                    {x.ativo ? (
-                      "Ativo"
-                    ) : (
-                      <span className="text-red-700">
-                        Inativo
-                        {x.datainativacao && (
-                          <span className="block text-xs font-normal text-gray-600">
-                            em {dataBR(x.datainativacao)} por{" "}
-                            {nomeUsuario.get(x.idusuarioinativacao ?? 0) ?? "—"}
-                          </span>
-                        )}
-                      </span>
-                    )}
+              {!filtrados.length ? (
+                <tr>
+                  <td colSpan={10} className="p-4 text-sm text-gray-600">
+                    {temFiltro ? "Nenhum usuário com esses filtros." : "Nenhum usuário cadastrado."}
                   </td>
-                  <td className="p-2"><Link href={`/usuarios/${x.idusuario}`} className="text-azul underline">Editar</Link></td>
                 </tr>
-              ))}
+              ) : (
+                filtrados.map((x) => (
+                  <tr key={x.idusuario}>
+                    <td className="p-2">{x.nome}<div className="text-xs text-gray-500">{x.email}</div></td>
+                    <td className="whitespace-nowrap p-2 text-gray-600">{x.registro ?? "—"}</td>
+                    <td className="p-2">{x.linha}</td>
+                    <td className="p-2">{nomeRamo.get(x.idramo) ?? "—"}</td>
+                    <td className="p-2">{nomeCargo.get(x.idcargo) ?? "—"}</td>
+                    <td className="p-2">{nomeSit.get(x.idsituacao) ?? "—"}</td>
+                    <td className="p-2">{nomeUsuario.get(x.idapf) ?? "—"}</td>
+                    <td className="p-2">{x.membrogrupo ? "Sim" : "Não"}</td>
+                    <td className="p-2">
+                      {x.ativo ? (
+                        "Ativo"
+                      ) : (
+                        <span className="text-red-700">
+                          Inativo
+                          {x.datainativacao && (
+                            <span className="block text-xs font-normal text-gray-600">
+                              em {dataBR(x.datainativacao)} por{" "}
+                              {nomeUsuario.get(x.idusuarioinativacao ?? 0) ?? "—"}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-2"><Link href={`/usuarios/${x.idusuario}`} className="text-azul underline">Editar</Link></td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

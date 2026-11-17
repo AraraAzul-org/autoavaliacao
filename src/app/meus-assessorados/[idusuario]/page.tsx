@@ -82,7 +82,8 @@ export default async function AvaliacoesDoAssessorado({
       return av ? { ...m, avaliacao: av as Avaliacao } : null;
     })
     .filter((m): m is Participacao => !!m)
-    .filter((m) => m.avaliacao.status === "aberta" || m.avaliacao.status === "finalizada");
+    .filter((m) => m.avaliacao.status === "aberta" || m.avaliacao.status === "finalizada")
+    .sort((a, b) => b.avaliacao.idavaliacao - a.avaliacao.idavaliacao);
 
   const notas = await carregarNotas(
     supabase,
@@ -148,6 +149,11 @@ export default async function AvaliacoesDoAssessorado({
           {cargo?.descricao ? `${cargo.descricao} · ` : ""}
           {pessoa.linha}
         </p>
+        {avaliacoes.length > 1 && (
+          <p className="mt-1 text-xs text-gray-500">
+            Avaliações da mais recente para a mais antiga. A que ainda falta concluir fica destacada.
+          </p>
+        )}
 
         {!avaliacoes.length && (
           <p className="mt-6 rounded border border-gray-200 bg-white p-4 text-sm text-gray-600">
@@ -170,7 +176,11 @@ export default async function AvaliacoesDoAssessorado({
           return (
             <section
               key={m.idavaliacaousuario}
-              className="mt-4 overflow-hidden rounded border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm"
+              className={`mt-4 overflow-hidden rounded border border-gray-200 border-l-4 bg-white shadow-sm ${
+                chave === "concluida"
+                  ? "border-l-amarelo"
+                  : "border-l-azul ring-2 ring-azul/20"
+              }`}
             >
               <div className="flex flex-wrap items-start gap-3 border-b border-gray-100 bg-gray-50/60 p-4">
                 <div className="min-w-0 flex-1">

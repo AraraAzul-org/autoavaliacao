@@ -19,7 +19,7 @@ function ler(f: FormData) {
     idapf: num("idapf"),
     datasituacao: (f.get("datasituacao") as string) || null,
     datapromessa: (f.get("datapromessa") as string) || null,
-    reducaopromessa: num("reducaopromessa"),
+    deducaopromessa: num("deducaopromessa"),
     membrogrupo: f.get("membrogrupo") === "on",
     ativo: f.get("ativo") === "on",
   };
@@ -45,8 +45,8 @@ function validar(d: ReturnType<typeof ler>): string | null {
   if (!d.nome) return "Informe o nome.";
   if (!d.email) return "Informe o e-mail.";
   if (!d.registro) return "Informe o registro.";
-  if (d.reducaopromessa !== null && (!Number.isInteger(d.reducaopromessa) || d.reducaopromessa < 0)) {
-    return "A redução deve ser um número inteiro de anos, sem valor negativo.";
+  if (d.deducaopromessa !== null && (!Number.isInteger(d.deducaopromessa) || d.deducaopromessa < 0)) {
+    return "A dedução deve ser um número inteiro de anos, sem valor negativo.";
   }
   return null;
 }

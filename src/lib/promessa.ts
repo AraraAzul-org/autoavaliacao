@@ -30,12 +30,12 @@ export function mesAtualBR(): number {
 
 /**
  * Anos de promessa = anos completos entre a data da promessa e hoje,
- * menos a redução informada (anos já contados antes da promessa).
+ * menos a dedução informada (anos já contados antes da promessa).
  * Devolve null quando não há data válida ou quando a data está no futuro.
  */
 export function anosPromessa(
   datapromessa?: string | null,
-  reducao?: number | null,
+  deducao?: number | null,
 ): number | null {
   if (!datapromessa) return null;
   const iso = String(datapromessa).slice(0, 10);
@@ -48,7 +48,7 @@ export function anosPromessa(
   if (mesHoje < mes || (mesHoje === mes && diaHoje < dia)) anos -= 1;
   if (anos < 0) return null;
 
-  const desconto = Number.isFinite(Number(reducao)) ? Math.trunc(Number(reducao)) : 0;
+  const desconto = Number.isFinite(Number(deducao)) ? Math.trunc(Number(deducao)) : 0;
   return Math.max(0, anos - desconto);
 }
 
