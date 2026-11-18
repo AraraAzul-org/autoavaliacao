@@ -5,7 +5,7 @@ import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
 import { ConfirmarExclusao } from "@/components/ConfirmarExclusao";
 import { ConfirmarCancelamento } from "@/components/ConfirmarCancelamento";
-import { salvarAvaliacao } from "./actions";
+import { salvarAvaliacao, alternarPpf } from "./actions";
 
 export const instant = false;
 
@@ -152,6 +152,19 @@ export default async function Avaliacoes({
                       <div className="sm:col-span-2">
                         <button className={btn}>Salvar</button>
                       </div>
+                    </form>
+                  </details>
+                )}
+                {!rascunho && (
+                  <details className="text-sm text-gray-900">
+                    <summary className="cursor-pointer text-white underline">Editar PPF</summary>
+                    <form action={alternarPpf} className="mt-1 rounded bg-white p-2 text-gray-900">
+                      <input type="hidden" name="idavaliacao" value={av.idavaliacao} />
+                      <label className="flex items-center gap-2">
+                        <input name="gerarppf" type="checkbox" defaultChecked={av.gerarppf} />
+                        Gerar PPF quando o APF concluir a avaliação
+                      </label>
+                      <button className={`${btn} mt-2`}>Salvar</button>
                     </form>
                   </details>
                 )}

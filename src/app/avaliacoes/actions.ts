@@ -52,6 +52,19 @@ export async function salvarAvaliacao(f: FormData) {
   voltar("ok", id ? "Avaliação atualizada." : "Avaliação criada como rascunho.");
 }
 
+// A avaliação já aberta não muda de descrição, questionário nem prazo, mas a
+// diretoria ainda pode ligar ou desligar a geração do PPF.
+export async function alternarPpf(f: FormData) {
+  const supabase = await exigirDiretor();
+  const id = idDe(f, "idavaliacao");
+  if (!id) voltar("erro", "Pedido inválido.");
+
+  const gerarppf = f.get("gerarppf") === "on";
+  const { error } = await supabase.from("avaliacao").update({ gerarppf }).eq("idavaliacao", id);
+  if (error) voltar("erro", mensagem(error));
+  voltar("ok", gerarppf ? "Avaliação passa a gerar PPF na conclusão do APF." : "Avaliação não gera mais PPF.");
+}
+
 export async function excluirAvaliacao(f: FormData) {
   const supabase = await exigirDiretor();
   const id = idDe(f, "idavaliacao");
