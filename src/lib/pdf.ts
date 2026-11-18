@@ -152,25 +152,55 @@ export function gerarPdf(doc: PdfDocumento): Uint8Array {
     y = corpoTopo;
   };
 
-  doc.blocos.forEach((bloco) => {
+  // Cada bloco é medido antes de ser desenhado: assim dá para manter a
+  // pergunta junto com a resposta, a ação e a data (sem quebrar o item no meio
+  // nem deixar um título sozinho no pé da página).
+  const itens = doc.blocos.map((bloco) => {
     const estilo = ESTILOS[bloco.tipo];
-    if (bloco.tipo === "espaco") {
-      y -= estilo.antes;
-      return;
+    const linhas = bloco.tipo === "espaco" ? [] : quebrar(limpar(bloco.texto), estilo.tamanho, estilo.negrito);
+    const altura =
+      bloco.tipo === "espaco"
+        ? estilo.antes
+        : estilo.antes + linhas.length * estilo.tamanho * 1.25 + (linhas.length - 1) * estilo.tamanho * 0.45;
+    return { bloco, estilo, linhas, altura };
+  });
+
+  // Um item do PPF é o título da pergunta mais as linhas de detalhe; o título
+  // da etapa vai junto com a primeira pergunta.
+  const unidades: (typeof itens)[] = [];
+  for (let i = 0; i < itens.length; ) {
+    const unidade = [itens[i]];
+    i += 1;
+    while (i < itens.length) {
+      const seguinte = itens[i];
+      const continuaDetalhe = seguinte.bloco.tipo === "texto";
+      const etapaSozinha = unidade.length === 1 && unidade[0].bloco.tipo === "secao" && seguinte.bloco.tipo !== "espaco";
+      if (!continuaDetalhe && !etapaSozinha) break;
+      unidade.push(seguinte);
+      i += 1;
     }
+    unidades.push(unidade);
+  }
 
-    const conteudo = limpar(bloco.texto);
-    const linhas = quebrar(conteudo, estilo.tamanho, estilo.negrito);
-    const altura = estilo.tamanho * 1.25;
+  const espacoDaPagina = corpoTopo - corpoBase;
 
-    linhas.forEach((linha, indice) => {
-      const espaco = indice === 0 ? estilo.antes : estilo.tamanho * 0.45;
-      // Títulos de pergunta não ficam sozinhos no pé da página: exige espaço
-      // para o próprio título e mais duas linhas do item.
-      const reserva = indice === 0 && estilo.antes > 0 ? altura * 3 : 0;
-      if (y - espaco - altura - reserva < corpoBase) novaPagina();
-      y -= espaco + altura;
-      ops.push(texto(linha, estilo.tamanho, estilo.negrito, MARGEM, y));
+  unidades.forEach((unidade) => {
+    const alturaUnidade = unidade.reduce((soma, item) => soma + item.altura, 0);
+    // Item que cabe numa página inteira nunca é cortado: começa na seguinte.
+    if (alturaUnidade <= espacoDaPagina && y - alturaUnidade < corpoBase) novaPagina();
+
+    unidade.forEach((item) => {
+      if (item.bloco.tipo === "espaco") {
+        y -= item.estilo.antes;
+        return;
+      }
+      const alturaLinha = item.estilo.tamanho * 1.25;
+      item.linhas.forEach((linha, indice) => {
+        const espaco = indice === 0 ? item.estilo.antes : item.estilo.tamanho * 0.45;
+        if (y - espaco - alturaLinha < corpoBase) novaPagina();
+        y -= espaco + alturaLinha;
+        ops.push(texto(linha, item.estilo.tamanho, item.estilo.negrito, MARGEM, y));
+      });
     });
   });
 
