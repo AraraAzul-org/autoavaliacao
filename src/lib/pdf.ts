@@ -72,8 +72,16 @@ const LARGURAS_NEGRITO = [
   280, 389, 584,
 ];
 
+// Alguns caracteres fora da faixa ASCII que aparecem nos textos.
+const LARGURAS_EXTRAS: Record<string, number> = {
+  "\u00b7": 278, // ponto central usado entre as informações do cabeçalho
+  "\u00a0": 278, // espaço fixo
+};
+
 const larguraChar = (caractere: string, negrito: boolean) => {
   const tabela = negrito ? LARGURAS_NEGRITO : LARGURAS_NORMAL;
+  const extra = LARGURAS_EXTRAS[caractere];
+  if (extra) return extra;
   const codigo = caractere.codePointAt(0) ?? 32;
   if (codigo >= 32 && codigo <= 126) return tabela[codigo - 32];
   // Nas acentuadas vale a largura da letra base (á = a, ç = c, ã = a...).
