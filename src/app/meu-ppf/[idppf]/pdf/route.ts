@@ -3,6 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { agruparPorEtapa, carregarPpf, dataBR, STATUS_PPF } from "@/lib/ppf";
 import { gerarPdf, type PdfBloco } from "@/lib/pdf";
+import { LOGO_PPF_BASE64, LOGO_PPF_ALTURA, LOGO_PPF_LARGURA } from "@/lib/logoPpf";
+
+// O logotipo vai embutido no código como base64 (JPEG) para o relatório não
+// depender de rede nem do sistema de arquivos na Vercel.
+function logoPpf() {
+  const binario = atob(LOGO_PPF_BASE64);
+  const dados = new Uint8Array(binario.length);
+  for (let i = 0; i < binario.length; i += 1) dados[i] = binario.charCodeAt(i);
+  return dados;
+}
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ idppf: string }> }) {
   const { idppf: idTexto } = await params;
@@ -22,18 +32,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const extras = ppf.itens.filter((i) => i.manual);
   const selo = STATUS_PPF[ppf.ppf.status] ?? STATUS_PPF.fechado;
 
-  const blocos: PdfBloco[] = [
-    { tipo: "titulo", texto: "Plano Pessoal de Formação (PPF)" },
-    { tipo: "texto", texto: ppf.usuario?.nome ?? eu.nome },
-    { tipo: "texto", texto: `Avaliação: ${ppf.avaliacao?.descricao ?? "—"}` },
-    {
-      tipo: "texto",
-      texto: `Status: ${selo.rotulo} · Gerado em ${dataBR(ppf.ppf.datageracao)}${
-        ppf.avaliacao ? ` · Prazo da avaliação: ${dataBR(ppf.avaliacao.prazo)}` : ""
-      }`,
-    },
-    { tipo: "texto", texto: "Perguntas com resposta abaixo da nota mínima e as ações previstas." },
-  ];
+  const blocos: PdfBloco[] = [];
 
   grupos.forEach((grupo) => {
     blocos.push({ tipo: "secao", texto: grupo.etapa });
@@ -58,7 +57,19 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     });
   }
 
-  const pdf = gerarPdf(blocos);
+  const pdf = gerarPdf({
+    titulo: "Plano Pessoal de Formação (PPF)",
+    informacoes: [
+      ppf.usuario?.nome ?? eu.nome,
+      `Avaliação: ${ppf.avaliacao?.descricao ?? "—"}`,
+      `Status: ${selo.rotulo}  ·  Prazo da avaliação: ${dataBR(ppf.avaliacao?.prazo ?? null)}  ·  Gerado em ${dataBR(
+        ppf.ppf.datageracao,
+      )}`,
+    ],
+    logo: { dados: logoPpf(), largura: LOGO_PPF_LARGURA, altura: LOGO_PPF_ALTURA },
+    blocos,
+    rodape: (pagina) => `Página: ${pagina}`,
+  });
   // O corpo da resposta viaja como ArrayBuffer puro (o BodyInit do Next não
   // aceita Uint8Array<ArrayBufferLike> na checagem de tipos).
   const corpo = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;

@@ -1,25 +1,42 @@
 /**
  * Gerador de PDF mínimo, sem bibliotecas: páginas A4 com Helvetica (normal e
- * negrito) e codificação WinAnsi. Serve para o relatório do PPF, que é um texto
- * simples com títulos e parágrafos.
+ * negrito), codificação WinAnsi e um cabeçalho fixo (logotipo, título
+ * centralizado e informações) repetido em todas as páginas, com o número da
+ * página no rodapé. Serve para o relatório do PPF, que é texto simples.
  */
 
 export type PdfBloco =
-  | { tipo: "titulo"; texto: string }
   | { tipo: "secao"; texto: string }
   | { tipo: "negrito"; texto: string }
   | { tipo: "texto"; texto: string }
   | { tipo: "espaco" };
+
+export type PdfLogo = { dados: Uint8Array; largura: number; altura: number };
+
+export type PdfDocumento = {
+  titulo: string;
+  informacoes: string[];
+  logo?: PdfLogo;
+  blocos: PdfBloco[];
+  rodape?: (pagina: number, total: number) => string;
+};
 
 const LARGURA = 595;
 const ALTURA = 842;
 const MARGEM = 56;
 const UTIL = LARGURA - MARGEM * 2;
 
+// Cabeçalho e rodapé.
+const LOGO_ALTURA = 50;
+const TITULO_TAMANHO = 17;
+const INFO_TAMANHO = 9.5;
+const INFO_ENTRELINHA = 12.5;
+const RODAPE_Y = 40;
+const RODAPE_TAMANHO = 9;
+
 type Estilo = { tamanho: number; negrito: boolean; antes: number };
 
 const ESTILOS: Record<PdfBloco["tipo"], Estilo> = {
-  titulo: { tamanho: 17, negrito: true, antes: 0 },
   secao: { tamanho: 12, negrito: true, antes: 16 },
   negrito: { tamanho: 10, negrito: true, antes: 10 },
   texto: { tamanho: 10, negrito: false, antes: 2 },
@@ -41,12 +58,20 @@ const limpar = (texto: string) =>
 
 const escapar = (texto: string) => texto.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 
-function quebrar(texto: string, tamanho: number, negrito: boolean): string[] {
+const texto = (conteudo: string, tamanho: number, negrito: boolean, x: number, y: number) =>
+  `BT /F${negrito ? 2 : 1} ${tamanho} Tf 1 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)} Tm (${escapar(conteudo)}) Tj ET`;
+
+const centrado = (conteudo: string, tamanho: number, negrito: boolean, y: number) => {
+  const largura = limpar(conteudo).length * larguraChar(tamanho, negrito);
+  return texto(conteudo, tamanho, negrito, (LARGURA - largura) / 2, y);
+};
+
+function quebrar(conteudo: string, tamanho: number, negrito: boolean): string[] {
   const limite = Math.max(10, Math.floor(UTIL / larguraChar(tamanho, negrito)));
   const linhas: string[] = [];
   let atual = "";
 
-  texto
+  conteudo
     .split(/\s+/)
     .filter(Boolean)
     .forEach((palavra) => {
@@ -68,61 +93,100 @@ function quebrar(texto: string, tamanho: number, negrito: boolean): string[] {
   return linhas.length ? linhas : [""];
 }
 
-export function gerarPdf(blocos: PdfBloco[]): Uint8Array {
+export function gerarPdf(doc: PdfDocumento): Uint8Array {
+  const logoLargura = doc.logo ? (LOGO_ALTURA * doc.logo.largura) / doc.logo.altura : 0;
+  const logoY = ALTURA - MARGEM - LOGO_ALTURA;
+  const tituloY = logoY + LOGO_ALTURA - 15;
+
+  // Informações do cabeçalho (nome, avaliação, status, prazo) centralizadas,
+  // logo abaixo do título e do logotipo.
+  const informacoes = doc.informacoes.map(limpar);
+  const infoInicio = logoY - 16;
+  const infoFim = infoInicio - Math.max(0, informacoes.length - 1) * INFO_ENTRELINHA;
+  const linhaY = infoFim - 12;
+  const corpoTopo = linhaY - 26;
+  const corpoBase = RODAPE_Y + 22;
+
+  // Primeiro monta o corpo, quebrando em quantas páginas precisar.
   const paginas: string[][] = [];
   let ops: string[] = [];
-  let y = ALTURA - MARGEM;
+  let y = corpoTopo;
 
   const novaPagina = () => {
     if (ops.length) paginas.push(ops);
     ops = [];
-    y = ALTURA - MARGEM;
+    y = corpoTopo;
   };
 
-  blocos.forEach((bloco) => {
+  doc.blocos.forEach((bloco) => {
     const estilo = ESTILOS[bloco.tipo];
     if (bloco.tipo === "espaco") {
       y -= estilo.antes;
       return;
     }
 
-    const texto = limpar(bloco.texto);
-    const linhas = quebrar(texto, estilo.tamanho, estilo.negrito);
+    const conteudo = limpar(bloco.texto);
+    const linhas = quebrar(conteudo, estilo.tamanho, estilo.negrito);
     const altura = estilo.tamanho * 1.25;
 
     linhas.forEach((linha, indice) => {
       const espaco = indice === 0 ? estilo.antes : estilo.tamanho * 0.45;
-      if (y - espaco - altura < MARGEM) novaPagina();
+      if (y - espaco - altura < corpoBase) novaPagina();
       y -= espaco + altura;
-      ops.push(
-        `BT /F${estilo.negrito ? 2 : 1} ${estilo.tamanho} Tf 1 0 0 1 ${MARGEM} ${y.toFixed(1)} Tm (${escapar(linha)}) Tj ET`,
-      );
+      ops.push(texto(linha, estilo.tamanho, estilo.negrito, MARGEM, y));
     });
   });
 
   if (ops.length) paginas.push(ops);
-  if (!paginas.length) paginas.push(["BT /F1 10 Tf 1 0 0 1 56 786 Tm () Tj ET"]);
+  if (!paginas.length) paginas.push([]);
 
   const total = paginas.length;
-  const fontRegular = 3 + total * 2;
-  const fontNegrito = 4 + total * 2;
-  const objetos: string[] = [];
 
+  // Cabeçalho repetido em todas as páginas, com a linha separando do corpo.
+  const cabecalho: string[] = [];
+  if (doc.logo) {
+    cabecalho.push(`q ${logoLargura.toFixed(1)} 0 0 ${LOGO_ALTURA} ${MARGEM} ${logoY.toFixed(1)} cm /Im1 Do Q`);
+  }
+  cabecalho.push(centrado(doc.titulo, TITULO_TAMANHO, true, tituloY));
+  informacoes.forEach((linha, indice) => {
+    cabecalho.push(centrado(linha, INFO_TAMANHO, false, infoInicio - indice * INFO_ENTRELINHA));
+  });
+  cabecalho.push(`0.6 G 0.7 w ${MARGEM} ${linhaY.toFixed(1)} m ${LARGURA - MARGEM} ${linhaY.toFixed(1)} l S`);
+
+  // Índices dos objetos: 1 catálogo, 2 páginas, depois página/conteúdo por
+  // página, as duas fontes e, por último, a imagem do logotipo.
+  const fonteRegular = 3 + total * 2;
+  const fonteNegrito = 4 + total * 2;
+  const imagem = 5 + total * 2;
+
+  const objetos: string[] = [];
   objetos.push("<< /Type /Catalog /Pages 2 0 R >>");
   objetos.push(
     `<< /Type /Pages /Kids [${paginas.map((_, i) => `${3 + i * 2} 0 R`).join(" ")}] /Count ${total} >>`,
   );
 
-  paginas.forEach((linhas, i) => {
-    const conteudo = linhas.join("\n");
+  const xobject = doc.logo ? ` /XObject << /Im1 ${imagem} 0 R >>` : "";
+
+  paginas.forEach((corpo, i) => {
+    const rodape = doc.rodape ? doc.rodape(i + 1, total) : "";
+    const conteudo = [...cabecalho, ...corpo, ...(rodape ? [centrado(rodape, RODAPE_TAMANHO, false, RODAPE_Y)] : [])].join(
+      "\n",
+    );
     objetos.push(
-      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${LARGURA} ${ALTURA}] /Resources << /Font << /F1 ${fontRegular} 0 R /F2 ${fontNegrito} 0 R >> >> /Contents ${4 + i * 2} 0 R >>`,
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${LARGURA} ${ALTURA}] /Resources << /Font << /F1 ${fonteRegular} 0 R /F2 ${fonteNegrito} 0 R >>${xobject} >> /Contents ${4 + i * 2} 0 R >>`,
     );
     objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
   });
 
   objetos.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
   objetos.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+
+  if (doc.logo) {
+    const jpeg = Array.from(doc.logo.dados, (b) => String.fromCharCode(b)).join("");
+    objetos.push(
+      `<< /Type /XObject /Subtype /Image /Width ${doc.logo.largura} /Height ${doc.logo.altura} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${doc.logo.dados.length} >>\nstream\n${jpeg}\nendstream`,
+    );
+  }
 
   let saida = "%PDF-1.4\n";
   const posicoes: number[] = [];
@@ -139,8 +203,8 @@ export function gerarPdf(blocos: PdfBloco[]): Uint8Array {
   });
   saida += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF\n`;
 
-  // A codificação WinAnsi é de um byte por caractere, então o tamanho em
-  // caracteres é o tamanho em bytes que o PDF espera.
+  // A codificação WinAnsi é de um byte por caractere (e o JPEG já está em
+  // bytes), então o tamanho em caracteres é o tamanho em bytes do PDF.
   const bytes = new Uint8Array(saida.length);
   for (let i = 0; i < saida.length; i += 1) bytes[i] = saida.charCodeAt(i) & 0xff;
   return bytes;
