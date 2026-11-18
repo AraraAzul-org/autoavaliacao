@@ -102,7 +102,7 @@ export default async function GerarAvaliacao({
 
         {!lista.length ? (
           <p className="mt-4 rounded border border-gray-200 bg-white p-4 text-sm text-gray-600">
-            Nenhum adulto ativo cadastrado. Cadastre os adultos em Usuários antes de gerar a avaliação.
+            Nenhum adulto ativo cadastrado. Cadastre os adultos em Associados antes de gerar a avaliação.
           </p>
         ) : (
           <SelecionarUsuarios idavaliacao={av.idavaliacao} rascunho={rascunho} usuarios={lista} />

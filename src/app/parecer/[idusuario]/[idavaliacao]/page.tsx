@@ -14,7 +14,7 @@ const dataBR = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 const SELOS: Record<string, { rotulo: string; classe: string }> = {
   concluida: { rotulo: "Parecer concluído", classe: "bg-green-100 text-green-800" },
   vencida: { rotulo: "Prazo vencido", classe: "bg-red-100 text-red-800" },
-  aguardando_usuario: { rotulo: "Aguardando o usuário", classe: "bg-gray-100 text-gray-700" },
+  aguardando_usuario: { rotulo: "Aguardando o associado", classe: "bg-gray-100 text-gray-700" },
   aguardando_apf: { rotulo: "Aguardando o APF", classe: "bg-gray-100 text-gray-700" },
   em_andamento: { rotulo: "Em andamento", classe: "bg-amber-100 text-amber-900" },
   pendente: { rotulo: "Não iniciado", classe: "bg-gray-100 text-gray-700" },
@@ -166,7 +166,7 @@ export default async function ParecerIndividual({
   const bloqueioConclusao = somenteLeitura
     ? null
     : au.status !== "concluida"
-      ? "O usuário ainda não concluiu a avaliação. A direção só pode concluir depois do APF, e o APF depois do usuário."
+      ? "O associado ainda não concluiu a avaliação. A direção só pode concluir depois do APF, e o APF depois do associado."
       : !au.concluiapf
         ? "O APF ainda não concluiu a avaliação. A direção só pode concluir depois do APF."
         : null;
@@ -191,7 +191,7 @@ export default async function ParecerIndividual({
           <span
             className={`rounded px-2 py-0.5 font-medium ${au.status === "concluida" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-700"}`}
           >
-            Usuário {au.status === "concluida" ? "concluiu" : "pendente"}
+            Associado {au.status === "concluida" ? "concluiu" : "pendente"}
           </span>
           <span
             className={`rounded px-2 py-0.5 font-medium ${au.concluiapf ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-700"}`}
@@ -226,7 +226,7 @@ export default async function ParecerIndividual({
               ? vencida
                 ? `O prazo desta avaliação terminou em ${dataBR(av.prazo)}. As respostas já enviadas continuam disponíveis para consulta.`
                 : "Esta avaliação não está mais aberta para respostas."
-              : "Você está vendo as respostas do usuário e do APF e pode registrar o parecer da direção."}
+              : "Você está vendo as respostas do associado e do APF e pode registrar o parecer da direção."}
         </p>
 
         <SecaoRespostas etapas={etapasUsuario} respostas={respostas} publico="usuario" />

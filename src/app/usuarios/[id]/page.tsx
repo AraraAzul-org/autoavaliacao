@@ -39,7 +39,7 @@ export default async function EditarUsuario({
     <Shell>
       <main className="max-w-4xl p-4">
         <Voltar href="/usuarios" />
-        <h1 className="mt-2 text-xl font-semibold text-azul">Editar usuário</h1>
+        <h1 className="mt-2 text-xl font-semibold text-azul">Editar associado</h1>
         {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
         {ok && <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">{ok}</p>}
         <FormUsuario

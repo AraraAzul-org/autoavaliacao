@@ -110,8 +110,8 @@ export default async function Parecer() {
       <main className="max-w-4xl p-4">
         <h1 className="text-xl font-semibold text-azul">Parecer</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Avaliações com etapa de nível Diretor. Você vê as respostas do usuário e do APF e registra o parecer da
-          direção. A conclusão da direção só é liberada depois que o usuário e o APF concluírem.
+          Avaliações com etapa de nível Diretor. Você vê as respostas do associado e do APF e registra o parecer da
+          direção. A conclusão da direção só é liberada depois que o associado e o APF concluírem.
         </p>
 
         {!avaliacoes.length && (
@@ -152,7 +152,7 @@ export default async function Parecer() {
 
                         <div className="flex flex-wrap gap-1.5 text-xs">
                           <span className={`rounded px-2 py-0.5 font-medium ${selo(i.status === "concluida")}`}>
-                            Usuário {i.status === "concluida" ? "concluiu" : "pendente"}
+                            Associado {i.status === "concluida" ? "concluiu" : "pendente"}
                           </span>
                           <span className={`rounded px-2 py-0.5 font-medium ${selo(!!i.concluiapf)}`}>
                             APF {i.concluiapf ? "concluiu" : "pendente"}

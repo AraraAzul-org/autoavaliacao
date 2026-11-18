@@ -71,12 +71,12 @@ export default async function Usuarios({
   return (
     <Shell>
       <main className="w-full p-4">
-        <h1 className="text-xl font-semibold text-azul">Cadastro de usuários</h1>
+        <h1 className="text-xl font-semibold text-azul">Cadastro de associados</h1>
 
         {erro && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-700">{erro}</p>}
         {ok && (
           <p className="mt-3 rounded bg-green-50 p-2 text-sm text-green-800">
-            {ok === "criado" ? "Usuário cadastrado." : "Dados salvos."}
+            {ok === "criado" ? "Associado cadastrado." : "Dados salvos."}
           </p>
         )}
 
@@ -129,7 +129,7 @@ export default async function Usuarios({
             </Link>
           )}
           <span className="ml-auto rounded bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200">
-            {filtrados.length} de {usuarios.length} {usuarios.length === 1 ? "usuário" : "usuários"}
+            {filtrados.length} de {usuarios.length} {usuarios.length === 1 ? "associado" : "associados"}
           </span>
         </form>
 
@@ -146,7 +146,7 @@ export default async function Usuarios({
               {!filtrados.length ? (
                 <tr>
                   <td colSpan={10} className="p-4 text-sm text-gray-600">
-                    {temFiltro ? "Nenhum usuário com esses filtros." : "Nenhum usuário cadastrado."}
+                    {temFiltro ? "Nenhum associado com esses filtros." : "Nenhum associado cadastrado."}
                   </td>
                 </tr>
               ) : (

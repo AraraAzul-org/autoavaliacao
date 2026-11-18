@@ -100,14 +100,14 @@ export default async function Home() {
           <div className="mt-6 grid items-start gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]">
             <section className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="flex flex-wrap items-center gap-2 border-b-2 border-amarelo bg-azul p-3 text-white">
-                <h2 className="flex-1 text-sm font-semibold">Usuários por situação</h2>
+                <h2 className="flex-1 text-sm font-semibold">Associados por situação</h2>
                 <span className="rounded bg-white/90 px-2 py-0.5 text-xs font-medium text-gray-800">
-                  {pessoas.length} {pessoas.length === 1 ? "usuário" : "usuários"}
+                  {pessoas.length} {pessoas.length === 1 ? "associado" : "associados"}
                 </span>
               </div>
               <div className="p-4">
                 {!itens.length ? (
-                  <p className="text-sm text-gray-600">Nenhum usuário cadastrado.</p>
+                  <p className="text-sm text-gray-600">Nenhum associado cadastrado.</p>
                 ) : (
                   <GraficoDistribuicao itens={itens} />
                 )}
@@ -116,18 +116,18 @@ export default async function Home() {
 
             <section className="overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm">
               <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2.5">
-                <h2 className="flex-1 text-sm font-semibold text-gray-800">Usuários e situação</h2>
+                <h2 className="flex-1 text-sm font-semibold text-gray-800">Associados e situação</h2>
                 <span className="text-xs text-gray-500">Ordenado por nome</span>
               </div>
               {!pessoas.length ? (
-                <p className="px-4 py-4 text-sm text-gray-600">Nenhum usuário cadastrado.</p>
+                <p className="px-4 py-4 text-sm text-gray-600">Nenhum associado cadastrado.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                         <th className="px-4 py-2 font-medium">Situação</th>
-                        <th className="px-4 py-2 font-medium">Usuário</th>
+                        <th className="px-4 py-2 font-medium">Associado</th>
                         <th className="px-4 py-2 font-medium">Data</th>
                         <th className="px-4 py-2 text-right font-medium">Tempo</th>
                       </tr>

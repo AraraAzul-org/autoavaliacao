@@ -194,7 +194,7 @@ export default async function AvaliacoesDoAssessorado({
                   </h2>
                   <p className="mt-0.5 text-sm text-gray-600">
                     {m.status === "concluida" && m.dataconclusao
-                      ? `Usuário concluiu em ${dataBR(m.dataconclusao)}`
+                      ? `Associado concluiu em ${dataBR(m.dataconclusao)}`
                       : vencida
                         ? `Prazo encerrado em ${dataBR(av.prazo)}`
                         : dias === 0
@@ -214,7 +214,7 @@ export default async function AvaliacoesDoAssessorado({
                 <div className="min-w-48 flex-1 space-y-2">
                   <div>
                     <div className="flex items-center justify-between gap-2 text-xs text-gray-600">
-                      <span>Usuário</span>
+                      <span>Associado</span>
                       <span>
                         {feitas.usuario} de {total.usuario} respondidas
                       </span>

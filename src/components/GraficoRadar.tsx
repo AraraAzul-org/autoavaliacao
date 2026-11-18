@@ -72,7 +72,7 @@ export function GraficoRadar({
           viewBox={`0 0 ${TAM} ${TAM}`}
           className="h-auto w-full"
           role="img"
-          aria-label={`Radar com ${total} etapas, ${series.length} usuários e a média da avaliação`}
+          aria-label={`Radar com ${total} etapas, ${series.length} associados e a média da avaliação`}
         >
           {vertices.map((pontosAnel, i) => (
             <polygon

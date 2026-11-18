@@ -1,13 +1,13 @@
 export type Nivel = "usuario" | "apf" | "diretor";
 
 export const NIVEIS: { valor: Nivel; rotulo: string }[] = [
-  { valor: "usuario", rotulo: "Usuário" },
+  { valor: "usuario", rotulo: "Associado" },
   { valor: "apf", rotulo: "APF" },
   { valor: "diretor", rotulo: "Diretor" },
 ];
 
 export const ROTULO_NIVEL: Record<Nivel, string> = {
-  usuario: "Usuário",
+  usuario: "Associado",
   apf: "APF",
   diretor: "Diretor",
 };

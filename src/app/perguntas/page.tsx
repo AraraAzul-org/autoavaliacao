@@ -211,7 +211,7 @@ export default async function Perguntas({
                 <input name="descricao" required placeholder="Ex.: Comprometimento" className={campo} />
               </label>
               <label className="flex flex-col text-sm">
-                <span className="mb-1 text-gray-600">Nota mínima (etapas de usuário)</span>
+                <span className="mb-1 text-gray-600">Nota mínima (etapas de associado)</span>
                 <input name="notaminima" inputMode="decimal" placeholder="Opcional" className={`${campo} w-28`} />
               </label>
               <label className="flex flex-col text-sm">
@@ -244,7 +244,7 @@ export default async function Perguntas({
               <h2 className="flex-1 font-semibold">
                 {et.descricao}
                 <span className={`ml-2 rounded px-2 py-0.5 text-xs font-medium ${seloNivel(et.publico)}`}>
-                  {ROTULO_NIVEL[et.publico as Nivel] ?? "Usuário"}
+                  {ROTULO_NIVEL[et.publico as Nivel] ?? "Associado"}
                 </span>
               </h2>
               <span
@@ -276,7 +276,7 @@ export default async function Perguntas({
                     <input name="descricao" required defaultValue={et.descricao} className={campo} />
                   </label>
                   <label className="flex flex-col text-sm">
-                    <span className="mb-1 text-gray-600">Nota mínima (etapas de usuário)</span>
+                    <span className="mb-1 text-gray-600">Nota mínima (etapas de associado)</span>
                     <input
                       name="notaminima"
                       inputMode="decimal"

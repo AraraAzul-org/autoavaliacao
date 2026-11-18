@@ -134,7 +134,7 @@ export default async function ResponderAvaliacao({
         )}
 
         {!etapas.length && (
-          <p className="mt-6 text-sm text-gray-600">Este questionário não tem perguntas para o usuário.</p>
+          <p className="mt-6 text-sm text-gray-600">Este questionário não tem perguntas para o associado.</p>
         )}
 
         {etapas.length > 0 && (

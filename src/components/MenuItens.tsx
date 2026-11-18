@@ -8,7 +8,7 @@ type Item = { href: string; rotulo: string };
 
 // Área de cadastros: só a diretoria vê.
 const CADASTROS: Item[] = [
-  { href: "/usuarios", rotulo: "Usuários" },
+  { href: "/usuarios", rotulo: "Associados" },
   { href: "/ramos", rotulo: "Ramos" },
   { href: "/funcoes", rotulo: "Funções" },
   { href: "/situacoes", rotulo: "Situações" },
@@ -82,7 +82,6 @@ export function MenuItens({
 
       {diretor && ligacao({ href: "/promessas", rotulo: "Promessas" })}
       {resultados && ligacao({ href: "/resultados", rotulo: "Resultados" })}
-      {resultados && ligacao({ href: "/consulta", rotulo: "Consulta" })}
       {ligacao({ href: "/minhas-avaliacoes", rotulo: "Minhas avaliações" })}
       {ligacao({ href: "/meus-assessorados", rotulo: "Meus assessorados" })}
       {parecer && ligacao({ href: "/parecer", rotulo: "Parecer" })}

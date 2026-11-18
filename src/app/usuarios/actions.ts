@@ -64,7 +64,7 @@ export async function criarUsuario(formData: FormData) {
   if (senha.length < 8) volta(SENHA_CURTA);
   if (d.idapf) {
     const { data: apf } = await supabase.from("usuario").select("email").eq("idusuario", d.idapf).maybeSingle();
-    if (apf?.email?.toLowerCase() === d.email) volta("O APF não pode ser o próprio usuário.");
+    if (apf?.email?.toLowerCase() === d.email) volta("O APF não pode ser o próprio associado.");
   }
 
   const { data: novo, error } = await supabase.from("usuario").insert(d).select("idusuario").single();
@@ -87,7 +87,7 @@ export async function atualizarUsuario(id: number, formData: FormData) {
 
   const invalido = validar(d);
   if (invalido) volta(invalido);
-  if (d.idapf === id) volta("O APF não pode ser o próprio usuário.");
+  if (d.idapf === id) volta("O APF não pode ser o próprio associado.");
   if (id === eu.idusuario && !d.ativo) volta("Você não pode inativar o seu próprio cadastro.");
 
   if (id === eu.idusuario) {
@@ -105,7 +105,7 @@ export async function atualizarUsuario(id: number, formData: FormData) {
   const emailAntigo = String(atual?.email ?? "").trim().toLowerCase();
   const temAcesso = !!atual?.auth_user_id;
   const ativoAtual = !!atual?.ativo;
-  if (!atual) volta("Usuário não encontrado.");
+  if (!atual) volta("Associado não encontrado.");
 
   if (d.email !== emailAntigo && temAcesso) {
     const acesso = await gerirAcesso(supabase, { acao: "alterar_email", idusuario: id, email: d.email });

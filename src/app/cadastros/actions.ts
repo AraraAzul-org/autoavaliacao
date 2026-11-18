@@ -46,7 +46,7 @@ export async function excluirSimples(f: FormData) {
   const { error } = await supabase.from(tabela).delete().eq(cfg.chave, id);
   if (error) {
     voltar(cfg.rota, "erro", error.code === "23503"
-      ? "Não é possível excluir: há usuários ou registros usando este item."
+      ? "Não é possível excluir: há associados ou registros usando este item."
       : "Não foi possível excluir.");
   }
   voltar(cfg.rota, "ok", "Registro excluído.");

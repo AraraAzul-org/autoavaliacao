@@ -211,7 +211,7 @@ export async function salvarRespostas(_anterior: EstadoRespostas, f: FormData): 
   }
 
   if (nivel === "apf" && au.status !== "concluida")
-    return { erro: "Respostas salvas, mas o APF só pode concluir depois que o usuário concluir a avaliação." };
+    return { erro: "Respostas salvas, mas o APF só pode concluir depois que o associado concluir a avaliação." };
   if (nivel === "diretor" && !au.concluiapf)
     return { erro: "Respostas salvas, mas a direção só pode concluir depois que o APF concluir a avaliação." };
 

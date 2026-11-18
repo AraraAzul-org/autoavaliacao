@@ -15,7 +15,7 @@ const dataBR = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 const SELOS: Record<string, { rotulo: string; classe: string }> = {
   concluida: { rotulo: "APF concluído", classe: "bg-green-100 text-green-800" },
   vencida: { rotulo: "Prazo vencido", classe: "bg-red-100 text-red-800" },
-  aguardando_usuario: { rotulo: "Aguardando o usuário", classe: "bg-gray-100 text-gray-700" },
+  aguardando_usuario: { rotulo: "Aguardando o associado", classe: "bg-gray-100 text-gray-700" },
   em_andamento: { rotulo: "Em andamento", classe: "bg-amber-100 text-amber-900" },
   pendente: { rotulo: "Não iniciada", classe: "bg-gray-100 text-gray-700" },
 };
@@ -164,7 +164,7 @@ export default async function RespostasDoAssessorado({
 
   const bloqueioConclusao =
     !somenteLeitura && au.status !== "concluida"
-      ? "O usuário ainda não concluiu a avaliação. O APF só pode concluir depois do usuário."
+      ? "O associado ainda não concluiu a avaliação. O APF só pode concluir depois do associado."
       : null;
 
   return (
@@ -176,7 +176,7 @@ export default async function RespostasDoAssessorado({
           <h1 className="flex-1 text-xl font-semibold text-azul">{av.descricao}</h1>
           {nota && nota.maximo > 0 && (
             <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-              Nota do usuário: {formatarNota(nota.total)} de {formatarNota(nota.maximo)}
+              Nota do associado: {formatarNota(nota.total)} de {formatarNota(nota.maximo)}
             </span>
           )}
           <span className={`rounded px-2 py-0.5 text-xs font-medium ${selo.classe}`}>{selo.rotulo}</span>
@@ -207,7 +207,7 @@ export default async function RespostasDoAssessorado({
               ? vencida
                 ? `O prazo desta avaliação terminou em ${dataBR(av.prazo)}. As respostas já enviadas continuam disponíveis para consulta.`
                 : "Esta avaliação não está mais aberta para respostas."
-              : "Você está vendo as respostas do usuário e pode responder as perguntas do APF."}
+              : "Você está vendo as respostas do associado e pode responder as perguntas do APF."}
         </p>
 
         <SecaoRespostas etapas={etapasUsuario} respostas={respostas} publico="usuario" />

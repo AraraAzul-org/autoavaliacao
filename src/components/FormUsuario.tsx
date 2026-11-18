@@ -70,7 +70,7 @@ export function FormUsuario(props: {
       </label>
       <label className="text-sm">E-mail *
         <input name="email" type="email" required defaultValue={v.email ?? ""} className={campo} />
-        <span className="block text-xs text-gray-500">O login do usuário usa este e-mail; ao alterar, o acesso também muda.</span>
+        <span className="block text-xs text-gray-500">O login do associado usa este e-mail; ao alterar, o acesso também muda.</span>
       </label>
       <label className="text-sm">Linha de atuação *
         <select name="linha" required defaultValue={v.linha ?? ""} className={campo}>
