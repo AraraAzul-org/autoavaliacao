@@ -43,9 +43,6 @@ const ESTILOS: Record<PdfBloco["tipo"], Estilo> = {
   espaco: { tamanho: 10, negrito: false, antes: 8 },
 };
 
-// Aproximação da largura média dos caracteres da Helvetica.
-const larguraChar = (tamanho: number, negrito: boolean) => tamanho * (negrito ? 0.55 : 0.5);
-
 // Remove o que a codificação WinAnsi não representa e troca aspas/travessões.
 const limpar = (texto: string) =>
   texto
@@ -56,18 +53,52 @@ const limpar = (texto: string) =>
     .replace(/\u2026/g, "...")
     .replace(/[^\x20-\x7e\u00a0-\u00ff]/g, "?");
 
+// Largura de cada caractere (32 a 126) em milésimos de "em", nas métricas
+// padrão da Helvetica e da Helvetica-Bold. Serve para centralizar e quebrar as
+// linhas com precisão (a aproximação por largura média deixava o texto torto).
+const LARGURAS_NORMAL = [
+  278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556,
+  556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833,
+  722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556,
+  556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334,
+  260, 334, 584,
+];
+
+const LARGURAS_NEGRITO = [
+  278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556,
+  556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833,
+  722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611,
+  556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389,
+  280, 389, 584,
+];
+
+const larguraChar = (caractere: string, negrito: boolean) => {
+  const tabela = negrito ? LARGURAS_NEGRITO : LARGURAS_NORMAL;
+  const codigo = caractere.codePointAt(0) ?? 32;
+  if (codigo >= 32 && codigo <= 126) return tabela[codigo - 32];
+  // Nas acentuadas vale a largura da letra base (á = a, ç = c, ã = a...).
+  const base = caractere.normalize("NFD").charCodeAt(0);
+  if (base >= 32 && base <= 126) return tabela[base - 32];
+  return 556;
+};
+
+// Largura do texto, em pontos.
+const medir = (conteudo: string, tamanho: number, negrito: boolean) => {
+  let total = 0;
+  for (const caractere of limpar(conteudo)) total += larguraChar(caractere, negrito);
+  return (total * tamanho) / 1000;
+};
+
 const escapar = (texto: string) => texto.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 
 const texto = (conteudo: string, tamanho: number, negrito: boolean, x: number, y: number) =>
   `BT /F${negrito ? 2 : 1} ${tamanho} Tf 1 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)} Tm (${escapar(conteudo)}) Tj ET`;
 
-const centrado = (conteudo: string, tamanho: number, negrito: boolean, y: number) => {
-  const largura = limpar(conteudo).length * larguraChar(tamanho, negrito);
-  return texto(conteudo, tamanho, negrito, (LARGURA - largura) / 2, y);
-};
+const centrado = (conteudo: string, tamanho: number, negrito: boolean, y: number) =>
+  texto(conteudo, tamanho, negrito, (LARGURA - medir(conteudo, tamanho, negrito)) / 2, y);
 
 function quebrar(conteudo: string, tamanho: number, negrito: boolean): string[] {
-  const limite = Math.max(10, Math.floor(UTIL / larguraChar(tamanho, negrito)));
+  const limite = UTIL;
   const linhas: string[] = [];
   let atual = "";
 
@@ -76,15 +107,18 @@ function quebrar(conteudo: string, tamanho: number, negrito: boolean): string[] 
     .filter(Boolean)
     .forEach((palavra) => {
       const teste = atual ? `${atual} ${palavra}` : palavra;
-      if (teste.length <= limite) {
+      if (medir(teste, tamanho, negrito) <= limite) {
         atual = teste;
         return;
       }
       if (atual) linhas.push(atual);
+      // Palavra maior que a linha inteira: corta em pedaços que caibam.
       let resto = palavra;
-      while (resto.length > limite) {
-        linhas.push(resto.slice(0, limite));
-        resto = resto.slice(limite);
+      while (medir(resto, tamanho, negrito) > limite && resto.length > 1) {
+        let corte = resto.length - 1;
+        while (corte > 1 && medir(resto.slice(0, corte), tamanho, negrito) > limite) corte -= 1;
+        linhas.push(resto.slice(0, corte));
+        resto = resto.slice(corte);
       }
       atual = resto;
     });
@@ -131,7 +165,10 @@ export function gerarPdf(doc: PdfDocumento): Uint8Array {
 
     linhas.forEach((linha, indice) => {
       const espaco = indice === 0 ? estilo.antes : estilo.tamanho * 0.45;
-      if (y - espaco - altura < corpoBase) novaPagina();
+      // Títulos de pergunta não ficam sozinhos no pé da página: exige espaço
+      // para o próprio título e mais duas linhas do item.
+      const reserva = indice === 0 && estilo.antes > 0 ? altura * 3 : 0;
+      if (y - espaco - altura - reserva < corpoBase) novaPagina();
       y -= espaco + altura;
       ops.push(texto(linha, estilo.tamanho, estilo.negrito, MARGEM, y));
     });
