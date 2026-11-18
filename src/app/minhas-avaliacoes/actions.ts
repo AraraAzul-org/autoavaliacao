@@ -226,7 +226,22 @@ export async function salvarRespostas(_anterior: EstadoRespostas, f: FormData): 
     nivel === "usuario"
       ? "Avaliação concluída. Obrigado!"
       : nivel === "apf"
-        ? "Etapa do APF concluída."
+        ? await gerarPpfDoAssociado(supabase, id, idusuario)
         : "Parecer da direção concluído.";
   voltar(nivel, id, idusuario, "ok", msg);
+}
+
+// Se a avaliação está marcada para gerar PPF, cria o plano do associado com as
+// perguntas respondidas abaixo da nota mínima da etapa. A função do banco não
+// faz nada quando a avaliação não gera PPF.
+async function gerarPpfDoAssociado(supabase: SupabaseClient, idavaliacao: number, idusuario: number) {
+  const { data, error } = await supabase.rpc("gerar_ppf", {
+    p_idavaliacao: idavaliacao,
+    p_idusuario: idusuario,
+  });
+  if (error) return "Etapa do APF concluída.";
+  revalidatePath("/meu-ppf");
+  return data
+    ? "Etapa do APF concluída. O PPF do associado foi gerado."
+    : "Etapa do APF concluída.";
 }

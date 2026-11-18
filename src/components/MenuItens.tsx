@@ -18,10 +18,12 @@ const CADASTROS: Item[] = [
 
 export function MenuItens({
   diretor,
+  cadastros,
   parecer,
   resultados,
 }: {
   diretor: boolean;
+  cadastros: boolean;
   parecer: boolean;
   resultados: boolean;
 }) {
@@ -53,7 +55,7 @@ export function MenuItens({
     <nav className="flex gap-1 overflow-x-auto border-b bg-gray-50 p-2 md:w-60 md:shrink-0 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3">
       {ligacao({ href: "/", rotulo: "Início" })}
 
-      {diretor && (
+      {cadastros && (
         <div className="flex items-center gap-1 md:mt-2 md:flex-col md:items-stretch md:gap-0.5">
           <button
             type="button"
@@ -83,6 +85,7 @@ export function MenuItens({
       {diretor && ligacao({ href: "/promessas", rotulo: "Promessas" })}
       {resultados && ligacao({ href: "/resultados", rotulo: "Resultados" })}
       {ligacao({ href: "/minhas-avaliacoes", rotulo: "Minhas avaliações" })}
+      {ligacao({ href: "/meu-ppf", rotulo: "Meu PPF" })}
       {ligacao({ href: "/meus-assessorados", rotulo: "Meus assessorados" })}
       {parecer && ligacao({ href: "/parecer", rotulo: "Parecer" })}
     </nav>

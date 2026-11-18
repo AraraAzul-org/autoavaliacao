@@ -9,7 +9,7 @@ export async function carregarSessao(supabase: SupabaseClient) {
   const email = String(claims.email ?? "").toLowerCase();
   const { data: eu } = await supabase
     .from("usuario")
-    .select("idusuario, nome, linha, cargo:cargo(descricao, avalia)")
+    .select("idusuario, nome, linha, acessocadastros, cargo:cargo(descricao, avalia)")
     .eq("auth_user_id", claims.sub)
     .maybeSingle();
   if (!eu) return { email, eu: null };
@@ -23,6 +23,9 @@ export async function carregarSessao(supabase: SupabaseClient) {
       linha,
       cargo,
       diretor: !!cargo?.avalia,
+      // A área de Cadastros é liberada pelo checkbox do cadastro do associado;
+      // quem tem função de diretor continua entrando normalmente.
+      podeCadastros: !!cargo?.avalia || !!eu.acessocadastros,
       // O menu Parecer é só para quem avalia e é dirigente.
       podeParecer: !!cargo?.avalia && linha === "Dirigente",
       // A tela de resultados segue a mesma regra: avalia e é dirigente.

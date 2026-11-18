@@ -8,7 +8,7 @@ import { carregarEu } from "@/lib/eu";
 async function exigirDiretor() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  if (!eu?.diretor) redirect("/");
+  if (!eu?.podeCadastros) redirect("/");
   return supabase;
 }
 

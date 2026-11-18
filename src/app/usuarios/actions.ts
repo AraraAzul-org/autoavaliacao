@@ -22,13 +22,14 @@ function ler(f: FormData) {
     deducaopromessa: num("deducaopromessa"),
     membrogrupo: f.get("membrogrupo") === "on",
     ativo: f.get("ativo") === "on",
+    acessocadastros: f.get("acessocadastros") === "on",
   };
 }
 
 async function exigirDiretor() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  if (!eu?.diretor) redirect("/");
+  if (!eu?.podeCadastros) redirect("/");
   return { supabase, eu };
 }
 

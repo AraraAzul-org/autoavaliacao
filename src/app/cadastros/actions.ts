@@ -9,7 +9,7 @@ import { CADASTROS } from "@/lib/cadastros";
 async function preparar(f: FormData) {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  if (!eu?.diretor) redirect("/");
+  if (!eu?.podeCadastros) redirect("/");
   const cfg = CADASTROS[String(f.get("tabela") ?? "")];
   if (!cfg) redirect("/");
   return { supabase, cfg, tabela: String(f.get("tabela")) };

@@ -237,12 +237,20 @@ export default async function AvaliacoesDoAssessorado({
                     </div>
                   )}
                 </div>
-                <Link
-                  href={`/meus-assessorados/${idusuario}/${av.idavaliacao}`}
-                  className="rounded bg-azul px-3 py-1.5 text-sm text-white hover:bg-azul-escuro"
-                >
-                  Ver respostas e responder
-                </Link>
+                <div className="flex flex-col items-start gap-2">
+                  <Link
+                    href={`/meus-assessorados/${idusuario}/${av.idavaliacao}`}
+                    className="rounded bg-azul px-3 py-1.5 text-sm text-white hover:bg-azul-escuro"
+                  >
+                    Ver respostas e responder
+                  </Link>
+                  <Link
+                    href={`/meus-assessorados/${idusuario}/${av.idavaliacao}/ppf`}
+                    className="rounded border border-azul px-3 py-1.5 text-sm font-medium text-azul hover:bg-azul/10"
+                  >
+                    PPF (somente leitura)
+                  </Link>
+                </div>
               </div>
             </section>
           );

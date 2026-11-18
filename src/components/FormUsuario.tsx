@@ -18,6 +18,7 @@ export type ValoresUsuario = {
   deducaopromessa?: number | null;
   membrogrupo?: boolean;
   ativo?: boolean;
+  acessocadastros?: boolean;
 };
 
 const campo = "w-full rounded border border-gray-300 p-2 text-sm";
@@ -138,6 +139,10 @@ export function FormUsuario(props: {
       <label className="flex items-center gap-2 text-sm sm:col-span-2">
         <input name="membrogrupo" type="checkbox" defaultChecked={v.membrogrupo ?? true} />
         Faz parte do grupo (desmarque para APF de outro grupo)
+      </label>
+      <label className="flex items-center gap-2 text-sm sm:col-span-2">
+        <input name="acessocadastros" type="checkbox" defaultChecked={v.acessocadastros ?? false} />
+        Permite acesso aos Cadastros (associados, ramos, funções, situações, avaliações e questionários)
       </label>
       <label className="flex items-center gap-2 text-sm sm:col-span-2">
         <input name="ativo" type="checkbox" defaultChecked={v.ativo ?? true} />

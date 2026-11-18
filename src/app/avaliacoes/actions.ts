@@ -8,7 +8,7 @@ import { carregarEu } from "@/lib/eu";
 async function exigirDiretor() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  if (!eu?.diretor) redirect("/");
+  if (!eu?.podeCadastros) redirect("/");
   return supabase;
 }
 
@@ -38,12 +38,13 @@ export async function salvarAvaliacao(f: FormData) {
   const descricao = texto(f, "descricao");
   const idquestionario = idDe(f, "idquestionario");
   const prazo = texto(f, "prazo");
+  const gerarppf = f.get("gerarppf") === "on";
 
   if (!descricao) voltar("erro", "Informe a descrição da avaliação.");
   if (!idquestionario) voltar("erro", "Escolha o questionário da avaliação.");
   if (!prazo) voltar("erro", "Informe o prazo da avaliação.");
 
-  const dados = { descricao, idquestionario, prazo };
+  const dados = { descricao, idquestionario, prazo, gerarppf };
   const { error } = id
     ? await supabase.from("avaliacao").update(dados).eq("idavaliacao", id)
     : await supabase.from("avaliacao").insert(dados);

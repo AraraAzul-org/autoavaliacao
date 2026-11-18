@@ -9,6 +9,7 @@ export async function Menu() {
   return (
     <MenuItens
       diretor={!!eu?.diretor}
+      cadastros={!!eu?.podeCadastros}
       parecer={!!eu?.podeParecer}
       resultados={!!eu?.podeResultados}
     />

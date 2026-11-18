@@ -34,11 +34,11 @@ export default async function Usuarios({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.diretor) redirect("/");
+  if (!eu.podeCadastros) redirect("/");
 
   const { erro, ok, ramo, linha, cargo, situacao } = await searchParams;
   const [u, r, c, s] = await Promise.all([
-    supabase.from("usuario").select("idusuario, nome, email, registro, linha, idramo, idcargo, idsituacao, idapf, membrogrupo, ativo, datainativacao, idusuarioinativacao").order("nome"),
+    supabase.from("usuario").select("idusuario, nome, email, registro, linha, idramo, idcargo, idsituacao, idapf, membrogrupo, ativo, acessocadastros, datainativacao, idusuarioinativacao").order("nome"),
     supabase.from("ramo").select("idramo, nome").order("nome"),
     supabase.from("cargo").select("idcargo, descricao").order("descricao"),
     supabase.from("situacao").select("idsituacao, situacao").order("idsituacao"),
@@ -137,7 +137,7 @@ export default async function Usuarios({
           <table className="w-full text-left text-sm">
             <thead className="bg-azul text-white">
               <tr>
-                {["Nome", "Registro", "Linha", "Ramo", "Função", "Situação", "APF", "Grupo", "Status", ""].map((h) => (
+                {["Nome", "Registro", "Linha", "Ramo", "Função", "Situação", "APF", "Grupo", "Cadastros", "Status", ""].map((h) => (
                   <th key={h} className="p-2 font-medium">{h}</th>
                 ))}
               </tr>
@@ -145,7 +145,7 @@ export default async function Usuarios({
             <tbody className="divide-y">
               {!filtrados.length ? (
                 <tr>
-                  <td colSpan={10} className="p-4 text-sm text-gray-600">
+                  <td colSpan={11} className="p-4 text-sm text-gray-600">
                     {temFiltro ? "Nenhum associado com esses filtros." : "Nenhum associado cadastrado."}
                   </td>
                 </tr>
@@ -160,6 +160,7 @@ export default async function Usuarios({
                     <td className="p-2">{nomeSit.get(x.idsituacao) ?? "—"}</td>
                     <td className="p-2">{nomeUsuario.get(x.idapf) ?? "—"}</td>
                     <td className="p-2">{x.membrogrupo ? "Sim" : "Não"}</td>
+                    <td className="p-2">{x.acessocadastros ? "Sim" : "Não"}</td>
                     <td className="p-2">
                       {x.ativo ? (
                         "Ativo"

@@ -28,7 +28,7 @@ export default async function Avaliacoes({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.diretor) redirect("/");
+  if (!eu.podeCadastros) redirect("/");
 
   const { ok, erro } = await searchParams;
 
@@ -36,7 +36,7 @@ export default async function Avaliacoes({
     supabase.from("questionario").select("idquestionario, descricao, ativo").order("descricao"),
     supabase
       .from("avaliacao")
-      .select("idavaliacao, descricao, prazo, status, datageracao, idquestionario")
+      .select("idavaliacao, descricao, prazo, status, datageracao, idquestionario, gerarppf")
       .order("prazo", { ascending: false }),
     supabase.from("avaliacaousuario").select("idavaliacao"),
     supabase.from("etapa").select("idetapa, idquestionario"),
@@ -90,6 +90,10 @@ export default async function Avaliacoes({
       <label className="flex flex-col gap-1">
         <span className="text-gray-600">Prazo</span>
         <input name="prazo" type="date" required defaultValue={valores?.prazo ?? ""} className={campo} />
+      </label>
+      <label className="flex items-center gap-2 text-sm sm:col-span-2">
+        <input name="gerarppf" type="checkbox" defaultChecked={valores?.gerarppf ?? false} />
+        Gerar PPF (Plano Pessoal de Formação) quando o APF concluir a avaliação
       </label>
     </>
   );
@@ -187,6 +191,9 @@ export default async function Avaliacoes({
                 </span>
                 <span>
                   Prazo: <strong>{dataBR(av.prazo)}</strong>
+                </span>
+                <span>
+                  PPF: <strong>{av.gerarppf ? "gera ao concluir o APF" : "não gera"}</strong>
                 </span>
                 <span>
                   {total} {total === 1 ? "avaliação gerada" : "avaliações geradas"}
