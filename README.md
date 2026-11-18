@@ -1,6 +1,6 @@
-# Avaliação de Adultos
+# Gestão de Adultos
 
-Sistema de autoavaliação dos adultos do grupo escoteiro. Cada adulto responde o
+Sistema de gestão dos adultos do grupo escoteiro. Cada adulto responde o
 questionário da avaliação aberta; diretores administram o cadastro e os APFs
 acompanham as respostas dos seus assessorados.
 

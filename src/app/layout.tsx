@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Avaliação de Adultos",
-  description: "Avaliação dos adultos do grupo escoteiro",
+  title: "Gestão de Adultos",
+  description: "Gestão dos adultos do Grupo Escoteiro Arara Azul",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
