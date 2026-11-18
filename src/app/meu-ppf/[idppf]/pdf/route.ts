@@ -59,6 +59,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 
   const pdf = gerarPdf(blocos);
+  // O corpo da resposta viaja como ArrayBuffer puro (o BodyInit do Next não
+  // aceita Uint8Array<ArrayBufferLike> na checagem de tipos).
+  const corpo = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;
   const nome = (ppf.usuario?.nome ?? "associado")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -66,7 +69,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
 
-  return new NextResponse(pdf, {
+  return new NextResponse(corpo, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="ppf-${nome || "associado"}-${idppf}.pdf"`,
