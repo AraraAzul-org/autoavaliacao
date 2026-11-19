@@ -93,7 +93,7 @@ export function calcularJovem(j: JovemDatas, fim = fimMesAtualBR()): CalculoJove
 
   const deducaoTotal = (
     [j.deducaolobinho, j.deducaoescoteiro, j.deducaosenior, j.deducaopioneiro] as const
-  ).reduce((soma, valor) => soma + (inteiro(valor) ?? 0), 0);
+  ).reduce<number>((soma, valor) => soma + (inteiro(valor) ?? 0), 0);
 
   const anosPromessa = anosCompletos(dataConsiderada, fim, deducaoTotal);
 
@@ -122,7 +122,7 @@ export function calcularJovem(j: JovemDatas, fim = fimMesAtualBR()): CalculoJove
     dataConsiderada,
     anosPromessa,
     deducaoTotal,
-    anosNoRamo: ramoAtual ? anosPorRamo[ramoAtual] : null,
+    anosNoRamo: ramoAtual ? anosPorRamo[ramoAtual as NomeRamo] : null,
     anosPorRamo,
   };
 }
