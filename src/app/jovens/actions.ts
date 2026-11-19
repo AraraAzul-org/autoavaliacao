@@ -85,7 +85,7 @@ export async function atualizarJovem(id: number, formData: FormData) {
   const { data: atual } = await supabase.from("jovem").select("ativo").eq("idjovem", id).maybeSingle();
   if (!atual) volta("Jovem não encontrado.");
 
-  const ativoAtual = !!atual.ativo;
+  const ativoAtual = Boolean(atual?.ativo);
 
   const registroStatus =
     d.ativo === ativoAtual
