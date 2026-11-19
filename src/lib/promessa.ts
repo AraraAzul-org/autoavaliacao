@@ -29,27 +29,49 @@ export function mesAtualBR(): number {
 }
 
 /**
- * Anos de promessa = anos completos entre a data da promessa e hoje,
- * menos a dedução informada (anos já contados antes da promessa).
- * Devolve null quando não há data válida ou quando a data está no futuro.
+ * Último dia do mês corrente em Brasília. As contas de anos consideram sempre
+ * o fim do mês, e não o dia de hoje.
+ */
+export function fimMesAtualBR(): string {
+  const [ano, mes] = hojeBR().split("-").map(Number);
+  const ultimoDia = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+  return `${ano}-${String(mes).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
+}
+
+/**
+ * Anos completos entre duas datas (aaaa-mm-dd), menos a dedução em anos
+ * inteiros. Devolve null quando falta alguma data, quando o fim é anterior ao
+ * início ou quando o resultado seria negativo.
+ */
+export function anosCompletos(
+  inicio?: string | null,
+  fim?: string | null,
+  deducao?: number | null,
+): number | null {
+  if (!inicio || !fim) return null;
+  const [anoInicio, mesInicio, diaInicio] = String(inicio).slice(0, 10).split("-").map(Number);
+  const [anoFim, mesFim, diaFim] = String(fim).slice(0, 10).split("-").map(Number);
+  if (!anoInicio || !mesInicio || !diaInicio || !anoFim || !mesFim || !diaFim) return null;
+
+  let anos = anoFim - anoInicio;
+  if (mesFim < mesInicio || (mesFim === mesInicio && diaFim < diaInicio)) anos -= 1;
+  if (anos < 0) return null;
+
+  const desconto = Number.isFinite(Number(deducao)) ? Math.trunc(Number(deducao)) : 0;
+  return Math.max(0, anos - desconto);
+}
+
+/**
+ * Anos de promessa = anos completos entre a data da promessa e o fim do mês
+ * atual, menos a dedução informada (anos já contados antes da promessa).
+ * Devolve null quando não há data válida.
  */
 export function anosPromessa(
   datapromessa?: string | null,
   deducao?: number | null,
 ): number | null {
   if (!datapromessa) return null;
-  const iso = String(datapromessa).slice(0, 10);
-  const [ano, mes, dia] = iso.split("-").map(Number);
-  if (!ano || !mes || !dia) return null;
-
-  const [anoHoje, mesHoje, diaHoje] = hojeBR().split("-").map(Number);
-
-  let anos = anoHoje - ano;
-  if (mesHoje < mes || (mesHoje === mes && diaHoje < dia)) anos -= 1;
-  if (anos < 0) return null;
-
-  const desconto = Number.isFinite(Number(deducao)) ? Math.trunc(Number(deducao)) : 0;
-  return Math.max(0, anos - desconto);
+  return anosCompletos(String(datapromessa).slice(0, 10), fimMesAtualBR(), deducao);
 }
 
 /** Data no formato brasileiro a partir de um ISO (aaaa-mm-dd). */

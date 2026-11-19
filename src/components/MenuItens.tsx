@@ -9,6 +9,7 @@ type Item = { href: string; rotulo: string };
 // Área de cadastros: só a diretoria vê.
 const CADASTROS: Item[] = [
   { href: "/usuarios", rotulo: "Associados" },
+  { href: "/jovens", rotulo: "Jovens" },
   { href: "/ramos", rotulo: "Ramos" },
   { href: "/funcoes", rotulo: "Funções" },
   { href: "/situacoes", rotulo: "Situações" },
@@ -17,12 +18,10 @@ const CADASTROS: Item[] = [
 ];
 
 export function MenuItens({
-  diretor,
   cadastros,
   parecer,
   resultados,
 }: {
-  diretor: boolean;
   cadastros: boolean;
   parecer: boolean;
   resultados: boolean;
@@ -82,7 +81,7 @@ export function MenuItens({
         </div>
       )}
 
-      {diretor && ligacao({ href: "/promessas", rotulo: "Promessas" })}
+      {ligacao({ href: "/promessas", rotulo: "Promessas" })}
       {resultados && ligacao({ href: "/resultados", rotulo: "Resultados" })}
       {ligacao({ href: "/minhas-avaliacoes", rotulo: "Minhas avaliações" })}
       {ligacao({ href: "/meu-ppf", rotulo: "Meu PPF" })}

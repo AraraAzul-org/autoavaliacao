@@ -9,7 +9,7 @@ export async function carregarSessao(supabase: SupabaseClient) {
   const email = String(claims.email ?? "").toLowerCase();
   const { data: eu } = await supabase
     .from("usuario")
-    .select("idusuario, nome, linha, acessocadastros, cargo:cargo(descricao, avalia)")
+    .select("idusuario, nome, linha, idramo, acessocadastros, cargo:cargo(descricao, avalia)")
     .eq("auth_user_id", claims.sub)
     .maybeSingle();
   if (!eu) return { email, eu: null };
@@ -21,8 +21,11 @@ export async function carregarSessao(supabase: SupabaseClient) {
       idusuario: eu.idusuario as number,
       nome: eu.nome as string,
       linha,
+      idramo: (eu.idramo as number | null) ?? null,
       cargo,
       diretor: !!cargo?.avalia,
+      // Dirigente de verdade: tem permissão de avaliação e atua na linha Dirigente.
+      dirigente: !!cargo?.avalia && linha === "Dirigente",
       // A área de Cadastros é liberada pelo checkbox do cadastro do associado;
       // quem tem função de diretor continua entrando normalmente.
       podeCadastros: !!cargo?.avalia || !!eu.acessocadastros,

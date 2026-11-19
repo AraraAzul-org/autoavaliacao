@@ -8,7 +8,6 @@ export async function Menu() {
   const eu = await carregarEu(supabase);
   return (
     <MenuItens
-      diretor={!!eu?.diretor}
       cadastros={!!eu?.podeCadastros}
       parecer={!!eu?.podeParecer}
       resultados={!!eu?.podeResultados}

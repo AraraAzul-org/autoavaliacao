@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { MESES } from "@/lib/promessa";
 
-export function SeletorMes({ valor }: { valor: number }) {
+export function SeletorMes({ valor, extras = {} }: { valor: number; extras?: Record<string, string> }) {
   const router = useRouter();
   const caminho = usePathname();
 
@@ -12,7 +12,10 @@ export function SeletorMes({ valor }: { valor: number }) {
       Mês
       <select
         value={valor}
-        onChange={(e) => router.push(`${caminho}?mes=${e.target.value}`)}
+        onChange={(e) => {
+          const parametros = new URLSearchParams({ mes: e.target.value, ...extras });
+          router.push(`${caminho}?${parametros.toString()}`);
+        }}
         className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20"
       >
         {MESES.map((mes, i) => (
