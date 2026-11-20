@@ -8,6 +8,7 @@ const ROTULOS: Array<{ prefixo: string; rotulo: string }> = [
   { prefixo: "/avaliacoes", rotulo: "Avaliações" },
   { prefixo: "/perguntas", rotulo: "Questionários" },
   { prefixo: "/promessas", rotulo: "Promessas" },
+  { prefixo: "/lencos", rotulo: "Lenços" },
   { prefixo: "/resultados", rotulo: "Resultados" },
   { prefixo: "/minhas-avaliacoes", rotulo: "Minhas avaliações" },
   { prefixo: "/meu-ppf", rotulo: "Meu PPF" },

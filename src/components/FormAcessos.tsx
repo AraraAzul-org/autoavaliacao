@@ -1,11 +1,30 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ITENS_MENU, MENU_GRUPOS } from "@/lib/menu";
-import { salvarAcessos } from "@/app/usuarios/[id]/acessos/actions";
+import { copiarAcessos, salvarAcessos } from "@/app/usuarios/[id]/acessos/actions";
 
 type Usuario = { idusuario: number; nome: string; email: string };
+
+const botao =
+  "rounded bg-azul px-4 py-2 text-sm font-medium text-white hover:bg-azul-escuro disabled:opacity-60";
+
+function Botao({
+  children,
+  className = botao,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending} className={className}>
+      {children}
+    </button>
+  );
+}
 
 export function FormAcessos({
   usuarios,
@@ -20,6 +39,7 @@ export function FormAcessos({
 }) {
   const router = useRouter();
   const [selecionado, setSelecionado] = useState(String(idusuario));
+  const [origem, setOrigem] = useState("");
   const [pending, startTransition] = useTransition();
 
   const campo = "w-full rounded border border-gray-300 bg-white p-2 text-sm";
@@ -34,6 +54,7 @@ export function FormAcessos({
           onChange={(event) => {
             const valor = event.target.value;
             setSelecionado(valor);
+            setOrigem("");
             startTransition(() => router.push(`/usuarios/${valor}/acessos`));
           }}
           className={campo}
@@ -48,6 +69,38 @@ export function FormAcessos({
       <p className="mt-1 text-xs text-gray-500">
         Troque o associado para ajustar as liberações dele. As alterações só valem depois de salvar.
       </p>
+
+      <form
+        action={copiarAcessos}
+        className="mt-4 rounded-lg border border-amarelo bg-amarelo-claro/60 p-4 shadow-sm"
+      >
+        <input type="hidden" name="idusuario" value={selecionado} />
+        <label className="block text-sm font-medium text-gray-700">
+          Copiar permissões de
+          <select
+            name="idorigem"
+            value={origem}
+            onChange={(event) => setOrigem(event.target.value)}
+            required
+            className={`${campo} mt-1`}
+          >
+            <option value="">Selecione o associado de origem</option>
+            {usuarios
+              .filter((usuario) => String(usuario.idusuario) !== selecionado)
+              .map((usuario) => (
+                <option key={usuario.idusuario} value={usuario.idusuario}>
+                  {usuario.nome} — {usuario.email}
+                </option>
+              ))}
+          </select>
+        </label>
+        <p className="mt-1 text-xs text-gray-600">
+          As liberações do associado escolhido substituem as deste. Revise antes de salvar: a cópia já é gravada.
+        </p>
+        <div className="mt-3">
+          <Botao>Copiar permissões</Botao>
+        </div>
+      </form>
 
       <form action={salvarAcessos} className="mt-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <input type="hidden" name="idusuario" value={selecionado} />
@@ -87,13 +140,9 @@ export function FormAcessos({
           );
         })}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="mt-5 rounded bg-azul px-4 py-2 text-sm font-medium text-white hover:bg-azul-escuro disabled:opacity-60"
-        >
-          Salvar liberações
-        </button>
+        <div className="mt-5">
+          <Botao>Salvar liberações</Botao>
+        </div>
       </form>
     </div>
   );
