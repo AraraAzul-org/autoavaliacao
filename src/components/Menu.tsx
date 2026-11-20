@@ -2,17 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
 import { MenuItens } from "@/components/MenuItens";
 
-// O menu é montado no servidor para esconder as áreas da diretoria de quem não é diretor.
+// O menu é montado no servidor a partir da tabela de liberações, para que
+// esconder um item do menu signifique também bloquear a rota.
 export async function Menu() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  return (
-    <MenuItens
-      membrogrupo={!!eu?.membrogrupo}
-      cadastros={!!eu?.podeCadastros}
-      parecer={!!eu?.podeParecer}
-      resultados={!!eu?.podeResultados}
-      logAcesso={!!eu?.dirigente}
-    />
-  );
+  return <MenuItens acessos={Array.from(eu?.acessos ?? [])} />;
 }

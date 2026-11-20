@@ -56,7 +56,7 @@ export default async function Parecer() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeParecer) redirect("/");
+  if (!eu.acessos.has("parecer")) redirect("/");
 
   const { data: etapasDiretor } = await supabase.from("etapa").select("idquestionario").eq("publico", "diretor");
   const questionarios = [...new Set((etapasDiretor ?? []).map((e) => e.idquestionario))];

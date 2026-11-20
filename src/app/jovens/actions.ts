@@ -36,7 +36,7 @@ function ler(f: FormData) {
 async function exigirCadastro() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  if (!eu?.membrogrupo) redirect("/");
+  if (!eu?.acessos.has("jovens")) redirect("/");
   return { supabase, eu };
 }
 

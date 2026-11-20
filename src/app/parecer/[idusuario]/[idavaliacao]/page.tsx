@@ -46,7 +46,7 @@ export default async function ParecerIndividual({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeParecer) redirect("/");
+  if (!eu.acessos.has("parecer")) redirect("/");
 
   const { ok, erro } = await searchParams;
 

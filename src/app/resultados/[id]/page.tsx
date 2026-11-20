@@ -64,7 +64,7 @@ export default async function ResultadoAvaliacao({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeResultados) redirect("/");
+  if (!eu.acessos.has("resultados")) redirect("/");
 
   const [{ data: av }, { data: questionario }] = await Promise.all([
     supabase

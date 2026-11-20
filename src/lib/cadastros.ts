@@ -2,6 +2,7 @@ export type CampoCadastro = { nome: string; rotulo: string; tipo: "texto" | "boo
 export type ConfigCadastro = {
   chave: string;
   rota: string;
+  chaveMenu: string;
   titulo: string;
   ajuda: string;
   campos: CampoCadastro[];
@@ -11,6 +12,7 @@ export const CADASTROS: Record<string, ConfigCadastro> = {
   ramo: {
     chave: "idramo",
     rota: "/ramos",
+    chaveMenu: "ramos",
     titulo: "Ramos",
     ajuda: "Ramos do grupo escoteiro (Filhotes, Lobinho, Escoteiro...).",
     campos: [{ nome: "nome", rotulo: "Nome", tipo: "texto" }],
@@ -18,6 +20,7 @@ export const CADASTROS: Record<string, ConfigCadastro> = {
   cargo: {
     chave: "idcargo",
     rota: "/funcoes",
+    chaveMenu: "funcoes",
     titulo: "Funções",
     ajuda: "Funções do adulto no grupo. Funções que avaliam (diretores) podem ver e avaliar todos os adultos do grupo.",
     campos: [
@@ -28,6 +31,7 @@ export const CADASTROS: Record<string, ConfigCadastro> = {
   situacao: {
     chave: "idsituacao",
     rota: "/situacoes",
+    chaveMenu: "situacoes",
     titulo: "Situações",
     ajuda: "Situações da formação do adulto, na ordem em que foram cadastradas.",
     campos: [{ nome: "situacao", rotulo: "Situação", tipo: "texto" }],

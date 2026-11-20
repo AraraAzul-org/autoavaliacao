@@ -60,7 +60,7 @@ export default async function Perguntas({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeCadastros) redirect("/");
+  if (!eu.acessos.has("perguntas")) redirect("/");
 
   const { ok, erro, abrir, q } = await searchParams;
 

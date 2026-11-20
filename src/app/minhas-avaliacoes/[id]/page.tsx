@@ -25,6 +25,7 @@ export default async function ResponderAvaliacao({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
+  if (!eu.acessos.has("minhas-avaliacoes")) redirect("/sem-acesso");
 
   const { ok, erro } = await searchParams;
 

@@ -72,6 +72,7 @@ export default async function Promessas({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
+  if (!eu.acessos.has("promessas")) redirect("/sem-acesso");
 
   const { mes, ramo } = await searchParams;
   const pedido = Number(mes);

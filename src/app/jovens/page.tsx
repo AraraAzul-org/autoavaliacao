@@ -41,7 +41,7 @@ export default async function Jovens({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.membrogrupo) redirect("/");
+  if (!eu.acessos.has("jovens")) redirect("/");
 
   const params = await searchParams;
   const { erro, ok } = params;

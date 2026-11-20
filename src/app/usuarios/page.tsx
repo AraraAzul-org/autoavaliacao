@@ -34,7 +34,7 @@ export default async function Usuarios({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeCadastros) redirect("/");
+  if (!eu.acessos.has("usuarios")) redirect("/");
 
   const { erro, ok, ramo, linha, cargo, situacao } = await searchParams;
   const [u, r, c, s] = await Promise.all([
@@ -82,7 +82,7 @@ export default async function Usuarios({
 
         <FormUsuario
           action={criarUsuario}
-          botao="Cadastrar"
+          botao="Salvar e ir aos acessos"
           pedirSenha
           ramos={ramos.map((x) => ({ id: x.idramo, rotulo: x.nome }))}
           cargos={cargos.map((x) => ({ id: x.idcargo, rotulo: x.descricao }))}
@@ -137,7 +137,7 @@ export default async function Usuarios({
           <table className="w-full text-left text-sm">
             <thead className="bg-azul text-white">
               <tr>
-                {["Nome", "Registro", "Linha", "Ramo", "Função", "Situação", "APF", "Grupo", "Cadastros", "Status", ""].map((h) => (
+                {["Nome", "Registro", "Linha", "Ramo", "Função", "Situação", "APF", "Grupo", "Acessos", "Status", ""].map((h) => (
                   <th key={h} className="p-2 font-medium">{h}</th>
                 ))}
               </tr>
@@ -160,7 +160,11 @@ export default async function Usuarios({
                     <td className="p-2">{nomeSit.get(x.idsituacao) ?? "—"}</td>
                     <td className="p-2">{nomeUsuario.get(x.idapf) ?? "—"}</td>
                     <td className="p-2">{x.membrogrupo ? "Sim" : "Não"}</td>
-                    <td className="p-2">{x.acessocadastros ? "Sim" : "Não"}</td>
+                    <td className="p-2">
+                      <Link href={`/usuarios/${x.idusuario}/acessos`} className="text-azul underline">
+                        Definir
+                      </Link>
+                    </td>
                     <td className="p-2">
                       {x.ativo ? (
                         "Ativo"

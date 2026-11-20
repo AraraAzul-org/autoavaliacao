@@ -29,7 +29,7 @@ export default async function GerarAvaliacao({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeCadastros) redirect("/");
+  if (!eu.acessos.has("avaliacoes")) redirect("/");
 
   const { data: av } = await supabase
     .from("avaliacao")

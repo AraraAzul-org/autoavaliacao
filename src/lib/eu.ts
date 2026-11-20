@@ -9,17 +9,24 @@ export async function carregarSessao(supabase: SupabaseClient) {
   const email = String(claims.email ?? "").toLowerCase();
   const { data: eu } = await supabase
     .from("usuario")
-    .select("idusuario, nome, linha, idramo, acessocadastros, membrogrupo, ativo, cargo:cargo(descricao, avalia)")
+    .select("idusuario, nome, linha, idramo, membrogrupo, ativo, cargo:cargo(descricao, avalia)")
     .eq("auth_user_id", claims.sub)
     .eq("ativo", true)
     .maybeSingle();
   if (!eu) return { email, eu: null };
+
+  // A tabela de acessos é a única fonte de verdade para menus e rotas.
+  const { data: menus } = await supabase
+    .from("usuario_menu")
+    .select("chave")
+    .eq("idusuario", eu.idusuario)
+    .eq("liberado", true);
+  const acessos = new Set((menus ?? []).map((m) => String(m.chave)));
+
   const cargo = (Array.isArray(eu.cargo) ? eu.cargo[0] : eu.cargo) as CargoInfo;
   const linha = String(eu.linha ?? "");
   const dirigente = !!cargo?.avalia && linha === "Dirigente";
   const membrogrupo = !!eu.membrogrupo;
-  const podeCadastros = !!cargo?.avalia || !!eu.acessocadastros;
-  const podeResultados = dirigente;
 
   return {
     email,
@@ -30,20 +37,18 @@ export async function carregarSessao(supabase: SupabaseClient) {
       idramo: (eu.idramo as number | null) ?? null,
       cargo,
       diretor: !!cargo?.avalia,
-      // Dirigente de verdade: tem permissão de avaliação e atua na linha Dirigente.
+      // Dirigente de verdade: usado por regras de promessas, não pelo menu.
       dirigente,
+      // membrogrupo continua existindo para os demais tratamentos do sistema.
       membrogrupo,
-      // Jovens é liberado para todo associado ativo do grupo.
-      podeJovens: membrogrupo,
-      // A área de Cadastros é liberada pelo checkbox do cadastro do associado;
-      // quem tem função de diretor continua entrando normalmente.
-      podeCadastros,
-      // O menu Parecer é só para quem avalia e é dirigente.
-      podeParecer: dirigente,
-      // A tela de resultados segue a mesma regra: avalia e é dirigente.
-      podeResultados,
-      // Escotista do grupo: membro ativo sem permissão de resultados.
-      escotista: membrogrupo && !podeResultados,
+      acessos,
+      // Cada item de menu, inclusive os pessoais, vem da tabela de liberações.
+      podeJovens: acessos.has("jovens"),
+      podeCadastros: acessos.has("usuarios"),
+      podeParecer: acessos.has("parecer"),
+      podeResultados: acessos.has("resultados"),
+      podeLogAcesso: acessos.has("acessolog"),
+      escotista: membrogrupo && !acessos.has("resultados"),
     },
   };
 }

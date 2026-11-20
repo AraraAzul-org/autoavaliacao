@@ -22,7 +22,7 @@ export default async function EditarJovem({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.membrogrupo) redirect("/");
+  if (!eu.acessos.has("jovens")) redirect("/");
 
   const [alvo, r] = await Promise.all([
     supabase.from("jovem").select("*").eq("idjovem", id).maybeSingle(),

@@ -24,7 +24,7 @@ export async function CadastroSimples({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeCadastros) redirect("/");
+  if (!eu.acessos.has(cfg.chaveMenu)) redirect("/");
 
   const { ok, erro } = await searchParams;
   const { data } = await supabase.from(tabela).select("*").order(cfg.chave);

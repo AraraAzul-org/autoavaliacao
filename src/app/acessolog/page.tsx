@@ -37,7 +37,7 @@ export default async function Acessolog({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.dirigente) redirect("/");
+  if (!eu.acessos.has("acessolog")) redirect("/");
 
   const params = await searchParams;
   const { de, ate, usuario } = params;

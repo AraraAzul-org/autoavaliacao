@@ -28,7 +28,7 @@ export default async function Avaliacoes({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeCadastros) redirect("/");
+  if (!eu.acessos.has("avaliacoes")) redirect("/");
 
   const { ok, erro } = await searchParams;
 

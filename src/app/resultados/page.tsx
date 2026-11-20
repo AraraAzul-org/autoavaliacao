@@ -44,7 +44,7 @@ export default async function Resultados({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeResultados) redirect("/");
+  if (!eu.acessos.has("resultados")) redirect("/");
 
   const params = await searchParams;
   const { avaliacao: texto, de, ate } = params;

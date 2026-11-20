@@ -12,6 +12,7 @@ export default async function MeusAssessorados() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
+  if (!eu.acessos.has("meus-assessorados")) redirect("/sem-acesso");
 
   const { data } = await supabase
     .from("usuario")

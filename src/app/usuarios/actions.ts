@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { gerirAcesso } from "@/lib/acesso";
 import { carregarEu } from "@/lib/eu";
 import { tituloInteligente } from "@/lib/nome";
+import { acessosIniciais, CHAVES_MENU } from "@/lib/menu";
 
 function ler(f: FormData) {
   const num = (k: string) => (f.get(k) ? Number(f.get(k)) : null);
@@ -30,7 +31,7 @@ function ler(f: FormData) {
 async function exigirDiretor() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  if (!eu?.podeCadastros) redirect("/");
+  if (!eu?.acessos.has("usuarios")) redirect("/");
   return { supabase, eu };
 }
 
@@ -78,8 +79,32 @@ export async function criarUsuario(formData: FormData) {
     return volta(acesso.erro ?? "Não foi possível criar o acesso.");
   }
 
+  // Semeadura equivalente às regras antigas; a tela de acessos abre em seguida.
+  const { data: cargo } = d.idcargo
+    ? await supabase.from("cargo").select("avalia").eq("idcargo", d.idcargo).maybeSingle()
+    : { data: null };
+  const iniciais = acessosIniciais({
+    membrogrupo: d.membrogrupo,
+    cargoAvalia: !!cargo?.avalia,
+    linha: d.linha,
+    acessocadastros: d.acessocadastros,
+  });
+  const { error: erroAcessos } = await supabase.from("usuario_menu").upsert(
+    CHAVES_MENU.map((chave) => ({
+      idusuario: novo.idusuario,
+      chave,
+      liberado: iniciais.includes(chave),
+    })),
+    { onConflict: "idusuario,chave" },
+  );
+  if (erroAcessos) {
+    return volta("Associado criado, mas não foi possível salvar as liberações de menu.");
+  }
+
   revalidatePath("/usuarios");
-  redirect("/usuarios?ok=criado");
+  redirect(
+    `/usuarios/${novo.idusuario}/acessos?ok=${encodeURIComponent("Associado cadastrado. Confira as liberações de menu.")}`,
+  );
 }
 
 export async function atualizarUsuario(id: number, formData: FormData) {

@@ -25,6 +25,7 @@ export default async function MeuPpf() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
+  if (!eu.acessos.has("meu-ppf")) redirect("/sem-acesso");
 
   const { data } = await supabase
     .from("ppf")

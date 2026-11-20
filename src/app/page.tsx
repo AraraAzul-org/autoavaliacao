@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarSessao } from "@/lib/eu";
+import { primeiraRota } from "@/lib/menu";
 import { Shell } from "@/components/Shell";
 import { GraficoDistribuicao, type ItemDistribuicao } from "@/components/GraficoDistribuicao";
 import { tempoDesde } from "@/lib/tempo";
@@ -95,6 +96,8 @@ export default async function Home() {
       </Shell>
     );
   }
+
+  if (!eu.acessos.has("inicio")) redirect(primeiraRota(eu.acessos));
 
   const [pessoasBrutas, situacoes, avaliacao] = await Promise.all([
     eu.podeResultados

@@ -21,6 +21,7 @@ export default async function PpfDoAssessorado({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
+  if (!eu.acessos.has("meus-assessorados")) redirect("/sem-acesso");
 
   const [{ data: pessoa }, { data: av }] = await Promise.all([
     supabase.from("usuario").select("idusuario, nome, idapf").eq("idusuario", idusuario).maybeSingle(),

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
@@ -22,7 +23,7 @@ export default async function EditarUsuario({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeCadastros) redirect("/");
+  if (!eu.acessos.has("usuarios")) redirect("/");
 
   const [alvo, u, r, c, s] = await Promise.all([
     supabase.from("usuario").select("*").eq("idusuario", id).maybeSingle(),
@@ -51,6 +52,18 @@ export default async function EditarUsuario({
           situacoes={(s.data ?? []).map((x) => ({ id: x.idsituacao, rotulo: x.situacao }))}
           apfs={(u.data ?? []).map((x) => ({ id: x.idusuario, rotulo: x.nome }))}
         />
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-white p-4">
+          <div className="flex-1 text-sm">
+            <strong>Menus liberados:</strong> defina quais telas este associado pode acessar.
+          </div>
+          <Link
+            href={`/usuarios/${id}/acessos`}
+            className="rounded bg-azul px-3 py-2 text-sm text-white hover:bg-azul-escuro"
+          >
+            Definir acessos
+          </Link>
+        </div>
 
         <form action={redefinirSenha.bind(null, id)} className="mt-6 flex flex-wrap items-end gap-2 rounded border border-gray-200 bg-white p-4">
           <div className="w-full text-sm">
