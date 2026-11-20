@@ -46,6 +46,22 @@ const NOMES_POR_ID: Record<number, NomeRamo> = {
   [RAMO_JOVEM.pioneiro]: "pioneiro",
 };
 
+/**
+ * Data que comprova a promessa: acolhida para filhotes; para os demais ramos,
+ * a primeira promessa preenchida (lobinho, escoteiro, sênior, pioneiro).
+ * Diferente de calcularJovem, não usa a acolhida como fallback dos outros ramos.
+ */
+export function dataPromessaOuAcolhida(j: JovemDatas): string | null {
+  if (j.idramo && NOMES_POR_ID[j.idramo] === "filhotes") return j.dataacolhida ?? null;
+  return (
+    j.datapromessalobinho ??
+    j.datapromessaescoteiro ??
+    j.datapromessasenior ??
+    j.datapromessapioneiro ??
+    null
+  );
+}
+
 // Início de cada ramo e o ramo seguinte (que marca o fim do anterior).
 const INICIO: Record<NomeRamo, keyof JovemDatas> = {
   filhotes: "dataacolhida",

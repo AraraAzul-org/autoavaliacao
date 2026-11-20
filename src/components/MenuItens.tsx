@@ -24,11 +24,13 @@ export function MenuItens({
   cadastros,
   parecer,
   resultados,
+  logAcesso,
 }: {
   membrogrupo: boolean;
   cadastros: boolean;
   parecer: boolean;
   resultados: boolean;
+  logAcesso: boolean;
 }) {
   const caminho = usePathname();
   const base = "whitespace-nowrap rounded px-3 py-2 text-sm";
@@ -97,6 +99,7 @@ export function MenuItens({
           {ligacao({ href: "/meu-ppf", rotulo: "Meu PPF" })}
           {ligacao(MEUS_ASSESSORADOS)}
           {parecer && ligacao({ href: "/parecer", rotulo: "Parecer" })}
+          {logAcesso && ligacao({ href: "/acessolog", rotulo: "Log de acesso" })}
         </>
       )}
     </nav>

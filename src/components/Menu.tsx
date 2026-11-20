@@ -12,6 +12,7 @@ export async function Menu() {
       cadastros={!!eu?.podeCadastros}
       parecer={!!eu?.podeParecer}
       resultados={!!eu?.podeResultados}
+      logAcesso={!!eu?.dirigente}
     />
   );
 }

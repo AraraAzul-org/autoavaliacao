@@ -4,7 +4,7 @@ import { carregarEu } from "@/lib/eu";
 import { Shell } from "@/components/Shell";
 import { SeletorMes } from "@/components/SeletorMes";
 import { anosPromessa, dataBR, fimMesAtualBR, MESES, mesAtualBR } from "@/lib/promessa";
-import { calcularJovem } from "@/lib/jovem";
+import { calcularJovem, dataPromessaOuAcolhida, RAMO_JOVEM } from "@/lib/jovem";
 
 export const instant = false;
 
@@ -48,10 +48,21 @@ type Linha = {
   anosNoRamo: number | null;
 };
 
+type SemPromessa = {
+  tipo: "Adulto" | "Jovem";
+  nome: string;
+  registro: string | null;
+  idramo: number | null;
+  situacao: string;
+};
+
 const mesDaData = (iso: string | null) => (iso ? Number(String(iso).slice(5, 7)) : null);
 
 const anos = (valor: number | null) =>
   valor === null ? "—" : `${valor} ${valor === 1 ? "ano" : "anos"}`;
+
+const ordenarPorNome = <T extends { nome: string }>(a: T, b: T) =>
+  a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
 
 export default async function Promessas({
   searchParams,
@@ -93,12 +104,15 @@ export default async function Promessas({
   const nomeRamo = new Map(listaRamos.map((x) => [x.idramo, x.nome]));
 
   const fim = fimMesAtualBR();
+  const adultos = (adultosBruto.data ?? []) as Adulto[];
+  const jovens = (jovensBruto.data ?? []) as JovemLinha[];
 
-  const linhasAdultos: Linha[] = ((adultosBruto.data ?? []) as Adulto[])
+  // Grade principal: só quem tem acolhida (filhotes) ou promessa (demais ramos,
+  // inclusive diretoria e comissão fiscal) no mês escolhido.
+  const linhasAdultos: Linha[] = adultos
     .filter((a) => ramoEscolhido !== null && a.idramo === ramoEscolhido)
-    // Quem não tem promessa continua na grade (com "—"); quem tem só entra no mês dela.
-    .filter((a) => !a.datapromessa || mesDaData(a.datapromessa) === mesEscolhido)
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }))
+    .filter((a) => !!a.datapromessa && mesDaData(a.datapromessa) === mesEscolhido)
+    .sort(ordenarPorNome)
     .map((a) => ({
       tipo: "Adulto",
       nome: a.nome,
@@ -111,31 +125,54 @@ export default async function Promessas({
       anosNoRamo: null,
     }));
 
-  const linhasJovens: Linha[] = ((jovensBruto.data ?? []) as JovemLinha[])
+  const linhasJovens: Linha[] = jovens
     .filter((j) => ramoEscolhido !== null && j.idramo === ramoEscolhido)
-    .map((j) => ({ j, calculo: calcularJovem(j, fim) }))
-    .filter(({ calculo }) => !calculo.dataConsiderada || mesDaData(calculo.dataConsiderada) === mesEscolhido)
-    .sort((a, b) => a.j.nome.localeCompare(b.j.nome, "pt-BR", { sensitivity: "base" }))
-    .map(({ j, calculo }) => ({
+    .map((j) => ({ j, calculo: calcularJovem(j, fim), data: dataPromessaOuAcolhida(j) }))
+    .filter(({ data }) => !!data && mesDaData(data) === mesEscolhido)
+    .sort((a, b) => ordenarPorNome(a.j, b.j))
+    .map(({ j, calculo, data }) => ({
       tipo: "Jovem",
       nome: j.nome,
       registro: j.registro,
       idramo: j.idramo,
-      data: calculo.dataConsiderada,
+      data,
       deducao: calculo.deducaoTotal,
       anosPromessa: calculo.anosPromessa,
       anosNoRamo: calculo.anosNoRamo,
     }));
 
-  const linhas = [...linhasAdultos, ...linhasJovens];
+  const linhas = [...linhasAdultos, ...linhasJovens].sort(ordenarPorNome);
+
+  // Visão separada: quem é do ramo do próprio usuário e não tem promessa/acolhida.
+  // Não sofre influência do mês nem do ramo selecionados acima.
+  const semPromessa: SemPromessa[] = [
+    ...adultos
+      .filter((a) => eu.idramo !== null && a.idramo === eu.idramo && !a.datapromessa)
+      .map((a) => ({
+        tipo: "Adulto" as const,
+        nome: a.nome,
+        registro: a.registro,
+        idramo: a.idramo,
+        situacao: "Sem promessa",
+      })),
+    ...jovens
+      .filter((j) => eu.idramo !== null && j.idramo === eu.idramo && !dataPromessaOuAcolhida(j))
+      .map((j) => ({
+        tipo: "Jovem" as const,
+        nome: j.nome,
+        registro: j.registro,
+        idramo: j.idramo,
+        situacao: j.idramo === RAMO_JOVEM.filhotes ? "Sem acolhida" : "Sem promessa",
+      })),
+  ].sort(ordenarPorNome);
 
   return (
     <Shell>
       <main className="max-w-5xl p-4">
         <h1 className="text-xl font-semibold text-azul">Promessas</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Adultos e jovens do ramo {ramoEscolhido === null ? "—" : nomeRamo.get(ramoEscolhido) ?? "—"} com promessa
-          em {nomeMes}. A tela sempre abre no mês atual.
+          Adultos e jovens do ramo {ramoEscolhido === null ? "—" : nomeRamo.get(ramoEscolhido) ?? "—"} com acolhida
+          (filhotes) ou promessa (demais ramos) em {nomeMes}. A tela sempre abre no mês atual.
         </p>
 
         <section className="mt-4 overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-amarelo bg-white shadow-sm">
@@ -173,7 +210,7 @@ export default async function Promessas({
             <p className="px-4 py-8 text-center text-sm text-gray-500">
               {ramoEscolhido === null
                 ? "Selecione um ramo para ver as promessas."
-                : `Nenhuma promessa registrada em ${nomeMes}.`}
+                : `Nenhuma promessa ou acolhida registrada em ${nomeMes}.`}
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -201,6 +238,48 @@ export default async function Promessas({
                       <td className="whitespace-nowrap px-4 py-2 text-gray-600">{anos(p.deducao)}</td>
                       <td className="whitespace-nowrap px-4 py-2 text-right text-gray-700">{anos(p.anosPromessa)}</td>
                       <td className="whitespace-nowrap px-4 py-2 text-right text-gray-700">{anos(p.anosNoRamo)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="mt-8 overflow-hidden rounded-lg border border-gray-200 border-l-4 border-l-azul bg-white shadow-sm">
+          <div className="border-b border-gray-100 bg-gray-50/60 px-4 py-2.5">
+            <h2 className="font-semibold text-azul">Sem promessa / acolhida</h2>
+            <p className="mt-0.5 text-xs text-gray-600">
+              Pessoas do seu ramo ({eu.idramo === null ? "—" : nomeRamo.get(eu.idramo) ?? "—"}) sem promessa registrada;
+              para filhotes, sem acolhida. Esta lista não é afetada pelo mês nem pelo ramo escolhidos acima.
+            </p>
+          </div>
+          {!semPromessa.length ? (
+            <p className="px-4 py-8 text-center text-sm text-gray-500">
+              {eu.idramo === null
+                ? "Seu usuário não está vinculado a um ramo."
+                : "Ninguém do seu ramo está sem promessa ou acolhida."}
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-2 font-medium">Nome</th>
+                    <th className="px-4 py-2 font-medium">Tipo</th>
+                    <th className="px-4 py-2 font-medium">Ramo</th>
+                    <th className="px-4 py-2 font-medium">Registro</th>
+                    <th className="px-4 py-2 font-medium">Situação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {semPromessa.map((p, indice) => (
+                    <tr key={`${p.tipo}-${p.registro ?? p.nome}-${indice}`}>
+                      <td className="px-4 py-2 font-medium text-gray-900">{p.nome}</td>
+                      <td className="whitespace-nowrap px-4 py-2 text-gray-600">{p.tipo}</td>
+                      <td className="px-4 py-2">{p.idramo === null ? "—" : nomeRamo.get(p.idramo) ?? "—"}</td>
+                      <td className="whitespace-nowrap px-4 py-2 text-gray-600">{p.registro ?? "—"}</td>
+                      <td className="whitespace-nowrap px-4 py-2 text-amber-700">{p.situacao}</td>
                     </tr>
                   ))}
                 </tbody>
