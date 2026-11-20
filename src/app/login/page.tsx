@@ -15,13 +15,32 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setMsg("");
-    const { error } = await createClient().auth.signInWithPassword({
+    const cliente = createClient();
+    const { error } = await cliente.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password: senha,
     });
     if (error) {
       setLoading(false);
       setMsg("E-mail ou senha incorretos.");
+      return;
+    }
+
+    const { data: autenticado } = await cliente.auth.getUser();
+    const uid = autenticado.user?.id;
+    const { data: cadastro } = uid
+      ? await cliente
+          .from("usuario")
+          .select("idusuario")
+          .eq("auth_user_id", uid)
+          .eq("ativo", true)
+          .maybeSingle()
+      : { data: null };
+
+    if (!cadastro) {
+      await cliente.auth.signOut();
+      setLoading(false);
+      setMsg("Usuário inativo. Procure a diretoria do grupo.");
       return;
     }
     location.assign("/");

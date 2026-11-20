@@ -46,7 +46,8 @@ export default async function GerarAvaliacao({
     supabase
       .from("usuario")
       .select("idusuario, nome, idramo, idcargo, membrogrupo")
-      .eq("ativo", true),
+      .eq("ativo", true)
+      .eq("membrogrupo", true),
     supabase.from("ramo").select("idramo, nome"),
     supabase.from("cargo").select("idcargo, descricao"),
     supabase.from("avaliacaousuario").select("idusuario").eq("idavaliacao", id),

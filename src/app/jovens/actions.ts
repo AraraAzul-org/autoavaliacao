@@ -4,13 +4,14 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEu } from "@/lib/eu";
+import { tituloInteligente } from "@/lib/nome";
 
 function ler(f: FormData) {
   const data = (k: string) => (f.get(k) ? String(f.get(k)) : null);
   const num = (k: string) => (f.get(k) ? Number(f.get(k)) : null);
   return {
     registro: String(f.get("registro") ?? "").trim(),
-    nome: String(f.get("nome") ?? "").trim(),
+    nome: tituloInteligente(String(f.get("nome") ?? "")),
     idramo: num("idramo"),
     dataregistro: data("dataregistro"),
     datanascimento: data("datanascimento"),
@@ -35,7 +36,7 @@ function ler(f: FormData) {
 async function exigirCadastro() {
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
-  if (!eu?.podeCadastros) redirect("/");
+  if (!eu?.membrogrupo) redirect("/");
   return { supabase, eu };
 }
 

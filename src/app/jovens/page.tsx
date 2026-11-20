@@ -27,7 +27,7 @@ export default async function Jovens({
   const supabase = await createClient();
   const eu = await carregarEu(supabase);
   if (!eu) redirect("/login");
-  if (!eu.podeCadastros) redirect("/");
+  if (!eu.membrogrupo) redirect("/");
 
   const { erro, ok } = await searchParams;
   const [j, r] = await Promise.all([

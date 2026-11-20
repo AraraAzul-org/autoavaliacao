@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation";
 
 type Item = { href: string; rotulo: string };
 
-// Área de cadastros: só a diretoria vê.
+// Jovens fica fora deste grupo: todos os associados do grupo têm acesso.
+// Os demais cadastros continuam restritos a quem tem acessocadastros ou cargo de diretor.
 const CADASTROS: Item[] = [
   { href: "/usuarios", rotulo: "Associados" },
-  { href: "/jovens", rotulo: "Jovens" },
   { href: "/ramos", rotulo: "Ramos" },
   { href: "/funcoes", rotulo: "Funções" },
   { href: "/situacoes", rotulo: "Situações" },
@@ -17,11 +17,15 @@ const CADASTROS: Item[] = [
   { href: "/perguntas", rotulo: "Questionários" },
 ];
 
+const MEUS_ASSESSORADOS: Item = { href: "/meus-assessorados", rotulo: "Meus assessorados" };
+
 export function MenuItens({
+  membrogrupo,
   cadastros,
   parecer,
   resultados,
 }: {
+  membrogrupo: boolean;
   cadastros: boolean;
   parecer: boolean;
   resultados: boolean;
@@ -52,41 +56,49 @@ export function MenuItens({
 
   return (
     <nav className="flex gap-1 overflow-x-auto border-b bg-gray-50 p-2 md:w-60 md:shrink-0 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3">
-      {ligacao({ href: "/", rotulo: "Início" })}
+      {!membrogrupo ? (
+        // Quem não pertence ao grupo enxerga apenas Meus assessorados.
+        ligacao(MEUS_ASSESSORADOS)
+      ) : (
+        <>
+          {ligacao({ href: "/", rotulo: "Início" })}
+          {ligacao({ href: "/jovens", rotulo: "Jovens" })}
 
-      {cadastros && (
-        <div className="flex items-center gap-1 md:mt-2 md:flex-col md:items-stretch md:gap-0.5">
-          <button
-            type="button"
-            onClick={() => setEscolha(!aberto)}
-            aria-expanded={aberto}
-            aria-controls="menu-cadastros"
-            className={`${base} flex shrink-0 items-center gap-1.5 ${
-              dentroDeCadastros ? "font-medium text-azul" : "text-azul"
-            } hover:bg-azul/10`}
-          >
-            <span
-              aria-hidden="true"
-              className={`text-[10px] transition-transform ${aberto ? "rotate-90" : ""}`}
-            >
-              ▶
-            </span>
-            Cadastros
-          </button>
-          {aberto && (
-            <div id="menu-cadastros" className="flex gap-1 md:flex-col md:gap-0.5">
-              {CADASTROS.map((item) => ligacao(item, "md:pl-5"))}
+          {cadastros && (
+            <div className="flex items-center gap-1 md:mt-2 md:flex-col md:items-stretch md:gap-0.5">
+              <button
+                type="button"
+                onClick={() => setEscolha(!aberto)}
+                aria-expanded={aberto}
+                aria-controls="menu-cadastros"
+                className={`${base} flex shrink-0 items-center gap-1.5 ${
+                  dentroDeCadastros ? "font-medium text-azul" : "text-azul"
+                } hover:bg-azul/10`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`text-[10px] transition-transform ${aberto ? "rotate-90" : ""}`}
+                >
+                  ▶
+                </span>
+                Cadastros
+              </button>
+              {aberto && (
+                <div id="menu-cadastros" className="flex gap-1 md:flex-col md:gap-0.5">
+                  {CADASTROS.map((item) => ligacao(item, "md:pl-5"))}
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {ligacao({ href: "/promessas", rotulo: "Promessas" })}
-      {resultados && ligacao({ href: "/resultados", rotulo: "Resultados" })}
-      {ligacao({ href: "/minhas-avaliacoes", rotulo: "Minhas avaliações" })}
-      {ligacao({ href: "/meu-ppf", rotulo: "Meu PPF" })}
-      {ligacao({ href: "/meus-assessorados", rotulo: "Meus assessorados" })}
-      {parecer && ligacao({ href: "/parecer", rotulo: "Parecer" })}
+          {ligacao({ href: "/promessas", rotulo: "Promessas" })}
+          {resultados && ligacao({ href: "/resultados", rotulo: "Resultados" })}
+          {ligacao({ href: "/minhas-avaliacoes", rotulo: "Minhas avaliações" })}
+          {ligacao({ href: "/meu-ppf", rotulo: "Meu PPF" })}
+          {ligacao(MEUS_ASSESSORADOS)}
+          {parecer && ligacao({ href: "/parecer", rotulo: "Parecer" })}
+        </>
+      )}
     </nav>
   );
 }

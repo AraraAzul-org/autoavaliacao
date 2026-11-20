@@ -5,11 +5,12 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { gerirAcesso } from "@/lib/acesso";
 import { carregarEu } from "@/lib/eu";
+import { tituloInteligente } from "@/lib/nome";
 
 function ler(f: FormData) {
   const num = (k: string) => (f.get(k) ? Number(f.get(k)) : null);
   return {
-    nome: String(f.get("nome") ?? "").trim(),
+    nome: tituloInteligente(String(f.get("nome") ?? "")),
     email: String(f.get("email") ?? "").trim().toLowerCase(),
     registro: String(f.get("registro") ?? "").trim() || null,
     linha: String(f.get("linha") ?? ""),
